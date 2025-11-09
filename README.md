@@ -49,3 +49,63 @@ This project is designed to support DUA compliance:
 **By using this pipeline with ADNI data, you confirm that you have read, understood, and agree to comply with all terms of the ADNI Data Use Agreement.**
 
 ---
+
+## About This Project
+
+This repository provides a **complete 3D NIfTI preprocessing pipeline** for **ADNI T1-weighted MRI** to accelerate experimentation in Alzheimer’s disease research. The pipeline is designed for **Windows** (primary development target) and is expected to run on **Unix-based systems**; portability improvements are welcome via issues and pull requests.
+
+The initial workflow was developed in **early 2025** over several months of research, experimentation, and iteration as part of a **final-year thesis**. The aim is to reduce time spent on data wrangling so you can focus on modeling.
+
+> **Important:** This repository contains **code only**. It does **not** host or distribute ADNI data. Users are responsible for obtaining authorized access and complying with the ADNI/IDA DUA.
+
+---
+
+## What’s Included
+
+- End-to-end **3D NIfTI preprocessing pipeline** (Python-only implementation)
+- Modular, reusable components with clear, minimal APIs
+- **Configuration templates** for small-scale experiments
+- **Documentation and minimal examples** to get started quickly
+
+If you prefer a **Jupyter Notebook (.ipynb)** walkthrough, contact **izzat.zaky@gmail.com**.
+
+---
+
+## Platforms
+
+- **Windows** — primary development and testing platform  
+- **Unix-based systems (Linux/macOS)** — expected support; please report and/or fix portability issues
+
+---
+
+## Getting Started
+
+1. Obtain ADNI access and review the **ADNI DUA**.  
+2. Follow the **README** for environment setup and path configuration.  
+3. Execute pipeline modules step by step or integrate them into your training workflow.
+
+---
+
+## Contributing
+
+Contributions are welcome. Typical flow:
+1. Fork and clone the repository  
+2. Create a feature branch  
+3. Implement changes (and update docs/tests where helpful)  
+4. Open a Pull Request with rationale, approach, and any assumptions
+
+---
+
+## Citation
+
+If this repository is useful in your work, please cite it:
+
+```bibtex
+@misc{alzheimer_mri_processing_pipeline_2025,
+  title        = {alzheimer-mri-processing-pipeline},
+  author       = {Zaky, Izzat and contributors},
+  year         = {2025},
+  publisher    = {GitHub},
+  howpublished = {\url{https://github.com/zashari/alzheimer-mri-processing-pipeline}},
+  note         = {Version <tag-or-commit>},
+}
