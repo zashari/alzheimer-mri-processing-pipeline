@@ -125,13 +125,39 @@ https://github.com/zashari/alzheimer-mri-processing-pipeline
 
 - **[`CITATION.cff`](CITATION.cff)** — Citation File Format for automatic citation (GitHub will display a "Cite this repository" button)
 
-### Third-Party Dependencies
+### References
 
-This pipeline uses several third-party tools and methods. When publishing work that uses this pipeline, please also cite:
+This pipeline is built upon and informed by the following research papers and methods. When publishing work that uses this pipeline, please cite the relevant references:
 
-- **HD-BET** (skull stripping): Isensee et al. (2019). *Automated brain extraction of multi-sequence MRI using artificial neural networks.* Human Brain Mapping. [https://doi.org/10.1002/hbm.24750](https://doi.org/10.1002/hbm.24750)
-- **ANTs** (template registration): Avants et al. (2008). *Symmetric diffeomorphic image registration with cross-correlation: evaluating automated labeling of elderly and neurodegenerative brain.* Medical Image Analysis. [https://doi.org/10.1016/j.media.2007.06.004](https://doi.org/10.1016/j.media.2007.06.004)
+#### Skull Stripping
+- Druzhinina, P., & Kondrateva, E. (2022). *The effect of skull-stripping on transfer learning for 3D MRI models: ADNI data.* Medical Imaging with Deep Learning (MIDL). [https://openreview.net/forum?id=IS1yeyiAFZS](https://openreview.net/forum?id=IS1yeyiAFZS)
+- Isensee, F., Schell, M., Tursunova, I., *et al.* (2019). *Automated brain extraction of multi-sequence MRI using artificial neural networks.* Human Brain Mapping. [https://doi.org/10.1002/hbm.24750](https://doi.org/10.1002/hbm.24750) — **HD-BET tool**: [https://github.com/MIC-DKFZ/HD-BET](https://github.com/MIC-DKFZ/HD-BET)
+
+#### Alzheimer's Disease ROI
+- Hassouneh, A., Bazuin, B., Danna-Dos-Santos, A., Acar, I., Abdel-Qader, I., & ADNI. (2024). *Feature Importance Analysis and Machine Learning for Alzheimer's Disease Early Detection: Feature Fusion of the Hippocampus, Entorhinal Cortex, and Standardized Uptake Value Ratio.* [https://doi.org/10.1159/000538486](https://doi.org/10.1159/000538486)
+
+#### Data Augmentation / Domain Adaptation
+- Llambias, S. N., Nielsen, M., & Mehdipour Ghazi, M. (2023). *Data Augmentation-Based Unsupervised Domain Adaptation In Medical Imaging.* arXiv preprint arXiv:2308.04395. [https://doi.org/10.48550/arXiv.2308.04395](https://doi.org/10.48550/arXiv.2308.04395)
+
+#### Image Enhancement / Optimization
+- Mirjalili, S., Mirjalili, S. M., & Lewis, A. (2014). *Grey Wolf Optimizer.* Advances in Engineering Software, 69, 46–61. [https://doi.org/10.1016/j.advengsoft.2013.12.007](https://doi.org/10.1016/j.advengsoft.2013.12.007)
+
+#### Template Registration
+- Avants, B. B., Epstein, C. L., Grossman, M., & Gee, J. C. (2008). *Symmetric diffeomorphic image registration with cross-correlation: evaluating automated labeling of elderly and neurodegenerative brain.* Medical Image Analysis, 12(1), 26-41. [https://doi.org/10.1016/j.media.2007.06.004](https://doi.org/10.1016/j.media.2007.06.004) — **ANTs tool**
+
+#### Dataset
 - **ADNI Dataset**: If using ADNI data, follow [ADNI citation requirements](https://adni.loni.usc.edu/wp-content/uploads/how_to_apply/ADNI_Manuscript_Citations.pdf)
+- Imaging Data Archive (IDA) at LONI: [https://ida.loni.usc.edu/](https://ida.loni.usc.edu/)
+
+---
+
+## Acknowledgments
+
+This work was developed as part of a final-year thesis project. Special thanks to:
+
+- **Dr. Dani Suandi, S.Si., M.Si.** — Lecturer in Mathematics, Binus University; Lecturer, School of Computer Science, Universitas Bina Nusantara — for guidance and supervision throughout this project.
+  - [Google Scholar](https://scholar.google.com/citations?user=LKUVKGEAAAAJ&hl=id)
+  - [ResearchGate](https://www.researchgate.net/profile/Dani-Suandi)
 
 ---
 
