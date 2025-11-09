@@ -148,9 +148,6 @@ This pipeline is built upon and informed by the following research papers and me
 #### Image Enhancement / Optimization
 - Mirjalili, S., Mirjalili, S. M., & Lewis, A. (2014). *Grey Wolf Optimizer.* Advances in Engineering Software, 69, 46–61. [https://doi.org/10.1016/j.advengsoft.2013.12.007](https://doi.org/10.1016/j.advengsoft.2013.12.007)
 
-#### Template Registration
-- Avants, B. B., Epstein, C. L., Grossman, M., & Gee, J. C. (2008). *Symmetric diffeomorphic image registration with cross-correlation: evaluating automated labeling of elderly and neurodegenerative brain.* Medical Image Analysis, 12(1), 26-41. [https://doi.org/10.1016/j.media.2007.06.004](https://doi.org/10.1016/j.media.2007.06.004) — **ANTs tool**
-
 #### Dataset
 - **ADNI Dataset**: If using ADNI data, follow [ADNI citation requirements](https://adni.loni.usc.edu/wp-content/uploads/how_to_apply/ADNI_Manuscript_Citations.pdf)
 - Imaging Data Archive (IDA) at LONI: [https://ida.loni.usc.edu/](https://ida.loni.usc.edu/)
