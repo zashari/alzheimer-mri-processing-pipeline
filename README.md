@@ -3,6 +3,27 @@
 [![Cite](https://img.shields.io/badge/cite-CITATION.cff-blue)](./CITATION.cff)
 [![Python](https://img.shields.io/badge/python-3.10%2B-blue)](#)
 
+## Table of Contents
+
+- [ADNI/IDA Compliance Notice](#adniida-compliance-notice)
+  - [Scope of This Repository](#scope-of-this-repository)
+  - [Requirements for ADNI Data Users](#requirements-for-adni-data-users)
+  - [Repository Compliance Statement](#repository-compliance-statement)
+  - [Resources](#resources)
+- [About This Project](#about-this-project)
+- [What's Included](#whats-included)
+- [Platforms](#platforms)
+- [Getting Started](#getting-started)
+- [Contributing](#contributing)
+- [Citation](#citation)
+  - [Quick Citation](#quick-citation)
+  - [Citation File](#citation-file)
+  - [References](#references)
+- [Acknowledgments](#acknowledgments)
+- [License](#license)
+
+---
+
 # ADNI/IDA Compliance Notice
 
 > **Project status:** Pre-release (WIP). Interfaces may change before v1.0.0.
