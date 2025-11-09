@@ -24,30 +24,7 @@
 
 ## Requirements for ADNI Data Users
 
-If you use this pipeline with **ADNI data**, you must comply with the ADNI DUA:  
-<https://ida.loni.usc.edu/collaboration/access/appLicense.jsp>
-
-1. **Data Access**
-   - Obtain ADNI data directly through the official ADNI/IDA portal. This repository does not provide access to ADNI data.
-
-2. **Use of AI/Cloud Tools**
-   - **Do not** upload ADNI data to public-facing AI tools (e.g., ChatGPT or unmanaged cloud AI services).
-   - Use only tools/platforms that provide explicit, enforceable data containment and confidentiality guarantees.
-   - Refer to **ADNI DUA Appendix A** for detailed restrictions.
-
-3. **Redistribution**
-   - **Do not** redistribute ADNI data in any form.
-   - Sharing of participant-level data is restricted to your authorized research team.
-   - Distribution of derived datasets must follow ADNI policies and, where required, be coordinated with the ADNI study PI.
-
-4. **Publications**
-   - Cite ADNI according to the official guidelines.
-   - Submit manuscripts to the ADNI Data and Publications Committee prior to journal submission.
-   - Follow all acknowledgment and citation requirements.
-
-5. **Security and Incident Reporting**
-   - Implement appropriate administrative, physical, and technical safeguards.
-   - Report any unauthorized disclosure or breach to ADNI within the timeframe specified in the DUA (typically within 15 days).
+If you use this pipeline with **ADNI data**, you must comply with the ADNI DUA:  <https://ida.loni.usc.edu/collaboration/access/appLicense.jsp>
 
 ---
 
