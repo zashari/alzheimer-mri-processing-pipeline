@@ -98,14 +98,52 @@ Contributions are welcome. Typical flow:
 
 ## Citation
 
-If this repository is useful in your work, please cite it:
+If you use this pipeline in your research, please cite it appropriately. This helps track the impact of this work and supports future development.
 
+### Quick Citation
+
+**BibTeX format:**
 ```bibtex
 @misc{alzheimer_mri_processing_pipeline_2025,
   title        = {alzheimer-mri-processing-pipeline},
-  author       = {Zaky, Izzat and contributors},
+  author       = {Ashari, Zaky and contributors},
   year         = {2025},
   publisher    = {GitHub},
   howpublished = {\url{https://github.com/zashari/alzheimer-mri-processing-pipeline}},
-  note         = {Version <tag-or-commit>},
+  note         = {Version 0.1.0},
+  doi          = {10.5281/zenodo.XXXXXXX}  # Add if you publish to Zenodo
 }
+```
+
+**APA format:**
+```
+Ashari, Z. (2025). alzheimer-mri-processing-pipeline [Computer software]. GitHub. 
+https://github.com/zashari/alzheimer-mri-processing-pipeline
+```
+
+### Citation Files
+
+- **[`CITATION.cff`](CITATION.cff)** — Citation File Format for automatic citation (GitHub will display a "Cite this repository" button)
+- **[`00_CITATION_GUIDE.md`](00_CITATION_GUIDE.md)** — Comprehensive citation guide including:
+  - Detailed BibTeX entries for this repository
+  - References to all third-party tools and methods used
+  - Acknowledgments and third-party licenses
+  - Complete `references.bib` file
+
+### Third-Party Dependencies
+
+This pipeline uses several third-party tools and methods. When publishing work that uses this pipeline, please also cite:
+
+- **HD-BET** (skull stripping): Isensee et al., 2019 — see [`00_CITATION_GUIDE.md`](00_CITATION_GUIDE.md) for full citation
+- **ANTs** (template registration): Avants et al., 2008 — see [`00_CITATION_GUIDE.md`](00_CITATION_GUIDE.md) for full citation
+- **ADNI Dataset**: If using ADNI data, follow [ADNI citation requirements](https://adni.loni.usc.edu/wp-content/uploads/how_to_apply/ADNI_Manuscript_Citations.pdf)
+
+For complete references and BibTeX entries, see **[`00_CITATION_GUIDE.md`](00_CITATION_GUIDE.md)**.
+
+---
+
+## License
+
+This project is open-source. Please check the repository root for a `LICENSE` file. If no LICENSE file is present, please contact the maintainer for licensing terms before use.
+
+**Third-party dependencies** (e.g., HD-BET, ANTs) have their own licenses. Please review and comply with their respective license terms. See [`00_CITATION_GUIDE.md`](00_CITATION_GUIDE.md) for details.
