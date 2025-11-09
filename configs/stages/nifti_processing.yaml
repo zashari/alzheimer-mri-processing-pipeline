@@ -1,0 +1,210 @@
+############################################
+# NIfTI Processing Stage Configuration     #
+############################################
+
+nifti_processing:
+  # Sub-stage to execute (skull_stripping, template_registration, labelling, twoD_conversion)
+  substage: "skull_stripping"
+
+  # Skull Stripping Configuration (HD-BET)
+  skull_stripping:
+    # Device configuration
+    device: "cuda"  # Options: "cuda", "cpu", "mps" (Apple Silicon)
+
+    # HD-BET settings
+    use_tta: false  # Test-time augmentation (better quality but slower)
+    disable_tta: true  # Inverse of use_tta for HD-BET CLI
+    save_mask: true  # Save brain mask in addition to extracted brain
+
+    # Processing configuration
+    subjects_per_batch: 5  # Number of subjects before GPU cleanup
+    enable_gpu_cleanup: true  # Enable periodic GPU memory cleanup
+    cleanup_wait_time: 5  # Seconds to wait after GPU cleanup
+    timeout_sec: 600  # Timeout per file (10 minutes)
+    max_threads: 1  # Number of parallel HD-BET processes
+
+    # Performance profile
+    profile_name: "BALANCED"  # Options: "FAST", "BALANCED", "ACCURATE"
+
+    # Input/Output paths (relative to output_root)
+    input_dir: "1_splitted_sequential"  # Where to find input NIfTI files
+    output_dir: "2_skull_stripping"  # Where to save skull-stripped files
+
+    # Required visits to process
+    required_visits: ["sc", "m06", "m12"]
+
+    # Visualization
+    visualization:
+      enabled: true
+      sample_size: 3  # Number of samples to visualize per split
+      output_dir: null  # If null, uses .visualizations/nifti_processing/skull_stripping/
+
+    # Retry configuration
+    max_retries: 2
+    retry_delay: 5  # Seconds between retries
+
+    # Test mode settings (for 'test' action)
+    test:
+      num_samples: 2  # Number of sample files to test
+      save_visualization: true
+
+  # Template Registration Configuration
+  template_registration:
+    # Template paths (relative to project root)
+    mni_template_path: "support_files/templates/mni-brain/MNI152_T1_1mm_brain.nii.gz"
+    hippocampus_roi_path: "support_files/templates/hippocampal-roi/hippho50.nii.gz"
+
+    # Input/Output paths (relative to output_root)
+    input_dir: "2_skull_stripping"  # Output from skull_stripping
+    output_dir: "3_optimal_slices"  # Where to save optimal slices
+
+    # Output subdirectories for each plane
+    plane_dirs:
+      axial: "axial"
+      coronal: "coronal"
+      sagittal: "sagittal"
+
+    # 3D hippocampus mask output
+    hippo_3d_dir: "hippocampus_masks_3D"
+    save_3d_masks: true  # Save complete 3D hippocampus masks
+    cleanup_2d_masks: false  # Remove old 2D mask files if they exist
+
+    # Registration parameters
+    registration:
+      type: "SyNAggro"  # Options: "SyN", "SyNRA", "SyNAggro", "SyNCC", "Affine", "Rigid"
+      num_threads: 8  # Number of threads for ANTs
+      verbose: false  # Show detailed registration output
+
+    # Processing configuration
+    use_parallel: true  # Enable parallel processing
+    max_workers: 2  # Number of parallel workers
+    min_hippo_volume: 100  # Minimum hippocampus volume threshold (in voxels)
+
+    # Required visits to process
+    required_visits: ["sc", "m06", "m12"]
+
+    # Environment settings
+    itk_threads: 8  # ITK_GLOBAL_DEFAULT_NUMBER_OF_THREADS
+
+    # Progress tracking
+    save_progress: true  # Save progress for resumability
+    progress_file: "processing_progress.json"
+
+    # Visualization
+    visualization:
+      enabled: true
+      sample_size: 3  # Number of samples to visualize
+      alpha: 0.3  # Overlay transparency
+      show_contour: true  # Show hippocampus contour
+      colormap_brain: "gray"
+      colormap_overlay: "Reds"
+      output_dir: null  # If null, uses .visualizations/nifti_processing/template_registration/
+
+    # Test mode settings
+    test:
+      num_samples: 1  # Test with single subject
+      save_visualization: true
+      show_overlay: true
+
+  # Labelling Configuration
+  labelling:
+    # Input/Output paths (relative to output_root)
+    input_dir: "3_optimal_slices"  # Output from template_registration
+    output_dir: "4_labelling"  # Where to save labelled files
+
+    # Metadata configuration
+    metadata_csv: "1_splitted_sequential/metadata_split.csv"  # Relative to output_root
+
+    # Required visits for complete sequences
+    required_visits: ["sc", "m06", "m12"]
+
+    # Slice types to process
+    slice_types:
+      axial:
+        enabled: true
+        pattern: "*_optimal_axial_x*.nii.gz"
+      coronal:
+        enabled: true
+        pattern: "*_optimal_coronal_x*.nii.gz"
+      sagittal:
+        enabled: true
+        pattern: "*_optimal_sagittal_x*.nii.gz"
+
+    # Group labels to use (from metadata)
+    groups: ["AD", "CN"]  # Exclude MCI if not needed
+
+    # Data splits
+    splits: ["train", "val", "test"]
+
+    # Duplicate handling
+    duplicate_strategy: "largest"  # Options: "largest", "newest", "skip"
+    remove_empty_files: true  # Remove files with 0 bytes
+
+    # Processing configuration
+    use_parallel: false  # Sequential processing for file operations
+    verify_copies: true  # Verify files after copying
+
+    # Visualization
+    visualization:
+      enabled: true
+      sample_size: 5  # Number of samples to visualize per group
+      show_distribution: true  # Show distribution plots
+      output_dir: null  # If null, uses .visualizations/nifti_processing/labelling/
+
+    # Test mode settings
+    test:
+      num_subjects: 3  # Number of subjects to test
+      save_visualization: true
+      verbose: true
+
+  # 2D Conversion Configuration
+  twoD_conversion:
+    # Input/Output paths (relative to output_root)
+    input_dir: "4_labelling"  # Output from labelling
+    output_dir: "5_twoD"  # Where to save PNG files
+
+    # Required visits for complete sequences
+    required_visits: ["sc", "m06", "m12"]
+
+    # Slice types to process
+    slice_types:
+      axial:
+        enabled: true
+        pattern: "_optimal_axial_x"
+        coord_name: "x"
+      coronal:
+        enabled: true
+        pattern: "_optimal_coronal_x"
+        coord_name: "x"
+      sagittal:
+        enabled: true
+        pattern: "_optimal_sagittal_x"
+        coord_name: "x"
+
+    # Group labels to use (from metadata)
+    groups: ["AD", "CN"]  # Exclude MCI if not needed
+
+    # Data splits
+    splits: ["train", "val", "test"]
+
+    # Conversion parameters
+    intensity_percentile: [1, 99]  # Percentile range for normalization
+    target_size: [256, 256]  # Target resolution for PNG images
+    interpolation_method: "LANCZOS"  # Options: "LANCZOS", "BILINEAR", "NEAREST", "BICUBIC"
+
+    # Processing configuration
+    verify_outputs: true  # Verify PNG files after saving
+    preserve_original_size: false  # Track original sizes for reporting
+
+    # Visualization
+    visualization:
+      enabled: true
+      sample_size: 9  # Number of sample images to visualize
+      show_samples: true  # Show sample converted images
+      output_dir: null  # If null, uses .visualizations/nifti_processing/twoD_conversion/
+
+    # Test mode settings
+    test:
+      num_subjects: 3  # Number of subjects to test
+      save_visualization: true
+      verbose: true

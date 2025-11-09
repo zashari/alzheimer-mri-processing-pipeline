@@ -1,0 +1,14 @@
+############################################
+# environment_setup stage defaults          #
+############################################
+
+environment_setup:
+  # Auto-install torch/torchvision/torchaudio if missing/unhealthy
+  auto_install: false
+
+  # CUDA preference: "auto" infers from driver via nvidia-smi; or choose one explicitly
+  # Supported tags are mapped internally to PyTorch indices: 11.8, 12.1, 12.4, 12.6
+  cuda_preference: "auto"
+
+  # Perf test level (placeholder hook for now): off|quick|full
+  perf_test: "off"

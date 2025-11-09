@@ -1,0 +1,1 @@
+# wraps image_processing/* as a stage

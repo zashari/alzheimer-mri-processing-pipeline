@@ -1,0 +1,2 @@
+# package metadata, deps, entry points
+# console_scripts: adp -> alzheimer_processing.cli:main

@@ -1,0 +1,20 @@
+############################################
+# Global defaults (paths, seeds, logging)  #
+############################################
+
+paths:
+  # Set these to your local dataset locations. You can override via --config or --set.
+  # Example raw ADNI-like layout root (subjects with nested scan_type/date/image_id):
+  data_root:  'D:\workspace\@zaky-ashari\playgrounds\alzheimer-disease\CODE_alzheimer-desease-classification\datasets\ADNI_1_5_T\.ADNI'
+  # Base output root; stage artifacts (e.g., manifests) will be placed under this root.
+  output_root: 'outputs'  # Now relative to project root
+  # Primary metadata CSV path (ADNI 1.5T 1-year cohort in your notebooks).
+  metadata_csv: 'D:\workspace\@zaky-ashari\playgrounds\alzheimer-disease\CODE_alzheimer-desease-classification\datasets\ADNI_1_5_T\ADNI1_Complete_1Yr_1.5T_3_21_2025.csv'
+
+# Reproducibility and execution controls
+seed: 42
+dry_run: false
+debug: false
+quiet: false
+log_file: null
+workers: 0

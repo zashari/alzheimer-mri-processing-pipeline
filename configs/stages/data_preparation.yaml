@@ -1,0 +1,42 @@
+############################################
+# data_preparation stage defaults           #
+############################################
+
+data_preparation:
+  # Require complete temporal sequences per subject
+  required_visits: ["sc", "m06", "m12"]
+
+  # Train/Val/Test split ratios (must sum to 1.0)
+  split_ratios: [0.7, 0.15, 0.15]
+
+  # Subject-level stratification column (typically ADNI Group)
+  stratify_by: "Group"
+
+  # Shuffle subjects before splitting
+  shuffle: true
+
+  # File operations configuration
+  use_symlinks: false  # Use symbolic links instead of copying (requires admin on Windows)
+  debug_mode: false    # Enable detailed debug output
+  copy_nifti_files: true  # Actually copy/link NIfTI files to output directory
+
+  # Deduplication settings
+  prefer_scaled2: true  # Prefer Scaled_2 over Scaled versions when duplicates exist
+
+  # Minimum subjects per group for feasibility check
+  min_subjects_per_group: 7
+
+  # Optional visualization during analyze action
+  visualization:
+    enabled: true
+    show_samples: 3  # Number of sample subjects to visualize per group
+    # Output directory for saving visualizations (relative to output_root)
+    # If null, will default to: {output_root}/.visualizations/data_preparation/
+    # If you want interactive display instead, set to "interactive"
+    output_dir: null  # Will use default: outputs/.visualizations/data_preparation/
+
+  # Progress display
+  show_progress: true  # Show progress bars during file operations
+
+  # Output format (relative to outputs/1_splitted_sequential/)
+  output_structure: "{split}/{subject}/{subject}_{visit}.nii[.gz]"
