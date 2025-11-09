@@ -121,24 +121,17 @@ Ashari, Z. (2025). alzheimer-mri-processing-pipeline [Computer software]. GitHub
 https://github.com/zashari/alzheimer-mri-processing-pipeline
 ```
 
-### Citation Files
+### Citation File
 
 - **[`CITATION.cff`](CITATION.cff)** — Citation File Format for automatic citation (GitHub will display a "Cite this repository" button)
-- **[`00_CITATION_GUIDE.md`](00_CITATION_GUIDE.md)** — Comprehensive citation guide including:
-  - Detailed BibTeX entries for this repository
-  - References to all third-party tools and methods used
-  - Acknowledgments and third-party licenses
-  - Complete `references.bib` file
 
 ### Third-Party Dependencies
 
 This pipeline uses several third-party tools and methods. When publishing work that uses this pipeline, please also cite:
 
-- **HD-BET** (skull stripping): Isensee et al., 2019 — see [`00_CITATION_GUIDE.md`](00_CITATION_GUIDE.md) for full citation
-- **ANTs** (template registration): Avants et al., 2008 — see [`00_CITATION_GUIDE.md`](00_CITATION_GUIDE.md) for full citation
+- **HD-BET** (skull stripping): Isensee et al. (2019). *Automated brain extraction of multi-sequence MRI using artificial neural networks.* Human Brain Mapping. [https://doi.org/10.1002/hbm.24750](https://doi.org/10.1002/hbm.24750)
+- **ANTs** (template registration): Avants et al. (2008). *Symmetric diffeomorphic image registration with cross-correlation: evaluating automated labeling of elderly and neurodegenerative brain.* Medical Image Analysis. [https://doi.org/10.1016/j.media.2007.06.004](https://doi.org/10.1016/j.media.2007.06.004)
 - **ADNI Dataset**: If using ADNI data, follow [ADNI citation requirements](https://adni.loni.usc.edu/wp-content/uploads/how_to_apply/ADNI_Manuscript_Citations.pdf)
-
-For complete references and BibTeX entries, see **[`00_CITATION_GUIDE.md`](00_CITATION_GUIDE.md)**.
 
 ---
 
@@ -146,4 +139,4 @@ For complete references and BibTeX entries, see **[`00_CITATION_GUIDE.md`](00_CI
 
 This project is open-source. Please check the repository root for a `LICENSE` file. If no LICENSE file is present, please contact the maintainer for licensing terms before use.
 
-**Third-party dependencies** (e.g., HD-BET, ANTs) have their own licenses. Please review and comply with their respective license terms. See [`00_CITATION_GUIDE.md`](00_CITATION_GUIDE.md) for details.
+**Third-party dependencies** (e.g., HD-BET, ANTs) have their own licenses. Please review and comply with their respective license terms as specified in their repositories.
