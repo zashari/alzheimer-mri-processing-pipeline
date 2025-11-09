@@ -1,4 +1,4 @@
-[![License](https://img.shields.io/badge/license-Apache--2.0-informational)](./LICENSE)
+[![License](https://img.shields.io/badge/license-MIT-informational)](./LICENSE)
 [![Status](https://img.shields.io/badge/status-WIP-%23ffaa00)](#)
 [![Cite](https://img.shields.io/badge/cite-CITATION.cff-blue)](./CITATION.cff)
 [![Python](https://img.shields.io/badge/python-3.10%2B-blue)](#)
@@ -169,6 +169,6 @@ This work was developed as part of a final-year thesis project. Special thanks t
 
 ## License
 
-This project is licensed under the **Apache License 2.0**. See the [LICENSE](LICENSE) file for details.
+This project is licensed under the **MIT License**. See the [LICENSE](LICENSE) file for details.
 
 **Third-party dependencies** (e.g., HD-BET, ANTs) have their own licenses. Please review and comply with their respective license terms. See [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md) for details.
