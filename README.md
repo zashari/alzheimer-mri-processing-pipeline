@@ -106,12 +106,11 @@ If you use this pipeline in your research, please cite it appropriately. This he
 ```bibtex
 @misc{alzheimer_mri_processing_pipeline_2025,
   title        = {alzheimer-mri-processing-pipeline},
-  author       = {Ashari, Zaky and contributors},
+  author       = {Ashari, Zaky Izzat and contributors},
   year         = {2025},
   publisher    = {GitHub},
   howpublished = {\url{https://github.com/zashari/alzheimer-mri-processing-pipeline}},
-  note         = {Version 0.1.0},
-  doi          = {10.5281/zenodo.XXXXXXX}  # Add if you publish to Zenodo
+  note         = {Version v0.1.0}
 }
 ```
 
@@ -155,7 +154,7 @@ This pipeline is built upon and informed by the following research papers and me
 
 This work was developed as part of a final-year thesis project. Special thanks to:
 
-- **Dr. Dani Suandi, S.Si., M.Si.** — Lecturer in Mathematics, Binus University; Lecturer, School of Computer Science, Universitas Bina Nusantara — for guidance and supervision throughout this project.
+- **Dr. Dani Suandi, S.Si., M.Si.** — Lecturer in Mathematics, Binus University; Lecturer, School of Computer Science, Binus University — for guidance and supervision throughout this project.
   - [Google Scholar](https://scholar.google.com/citations?user=LKUVKGEAAAAJ&hl=id)
   - [ResearchGate](https://www.researchgate.net/profile/Dani-Suandi)
 
