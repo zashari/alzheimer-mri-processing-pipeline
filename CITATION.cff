@@ -6,13 +6,13 @@ date-released: "2025-11-09"
 repository-code: "https://github.com/zashari/alzheimer-mri-processing-pipeline"
 authors:
   - family-names: "Ashari"
-    given-names: "Zaky Izzat"
+    given-names: "Zaky"
   - name: "and contributors"
 preferred-citation:
   type: misc
   title: "alzheimer-mri-processing-pipeline"
   authors:
     - family-names: "Ashari"
-      given-names: "Zaky Izzat"
+      given-names: "Zaky"
   year: 2025
   notes: "Version 0.1.0. See README for third-party references."

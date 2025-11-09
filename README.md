@@ -113,7 +113,7 @@ If you use this pipeline in your research, please cite it appropriately. This he
 ```bibtex
 @misc{alzheimer_mri_processing_pipeline_2025,
   title        = {alzheimer-mri-processing-pipeline},
-  author       = {Ashari, Zaky Izzat and contributors},
+  author       = {Ashari, Zaky and contributors},
   year         = {2025},
   publisher    = {GitHub},
   howpublished = {\url{https://github.com/zashari/alzheimer-mri-processing-pipeline}},
