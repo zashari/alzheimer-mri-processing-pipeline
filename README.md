@@ -1,4 +1,11 @@
+[![License](https://img.shields.io/badge/license-Apache--2.0-informational)](./LICENSE)
+[![Status](https://img.shields.io/badge/status-WIP-%23ffaa00)](#)
+[![Cite](https://img.shields.io/badge/cite-CITATION.cff-blue)](./CITATION.cff)
+[![Python](https://img.shields.io/badge/python-3.10%2B-blue)](#)
+
 # ADNI/IDA Compliance Notice
+
+> **Project status:** Pre-release (WIP). Interfaces may change before v1.0.0.
 
 > **This project is an independent, open-source effort. It is not affiliated with, endorsed by, or sponsored by the Alzheimer’s Disease Neuroimaging Initiative ([ADNI](https://adni.loni.usc.edu/)) or the Imaging Data Archive ([IDA](https://ida.loni.usc.edu/)) operated by the Laboratory of Neuro Imaging ([LONI](https://loni.usc.edu/)). “ADNI” and “IDA-LONI” are trademarks of their respective owners and are used solely to indicate data compatibility.**
 >
@@ -162,6 +169,6 @@ This work was developed as part of a final-year thesis project. Special thanks t
 
 ## License
 
-This project is open-source. Please check the repository root for a `LICENSE` file. If no LICENSE file is present, please contact the maintainer for licensing terms before use.
+This project is licensed under the **Apache License 2.0**. See the [LICENSE](LICENSE) file for details.
 
-**Third-party dependencies** (e.g., HD-BET, ANTs) have their own licenses. Please review and comply with their respective license terms as specified in their repositories.
+**Third-party dependencies** (e.g., HD-BET, ANTs) have their own licenses. Please review and comply with their respective license terms. See [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md) for details.
