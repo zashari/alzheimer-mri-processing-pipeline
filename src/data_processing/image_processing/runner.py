@@ -26,7 +26,9 @@ def run(action: str, cfg: Dict) -> int:
     # Route to appropriate substage
     if substage == "center_crop":
         return center_crop.run(action, cfg)
-
+    elif substage == "image_enhancement":
+        from . import image_enhancement
+        return image_enhancement.run(action, cfg)
     else:
         # Unknown substage
         formatter = ImageProcessingFormatter(
@@ -36,7 +38,7 @@ def run(action: str, cfg: Dict) -> int:
         )
         formatter.error(f"Unknown substage: {substage}", {
             "cause": f"Invalid substage '{substage}' in configuration",
-            "next_steps": "Valid substages: center_crop"
+            "next_steps": "Valid substages: center_crop, image_enhancement"
         })
         formatter.footer(exit_code=2)
         return 2
