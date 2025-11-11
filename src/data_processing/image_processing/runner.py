@@ -29,6 +29,9 @@ def run(action: str, cfg: Dict) -> int:
     elif substage == "image_enhancement":
         from . import image_enhancement
         return image_enhancement.run(action, cfg)
+    elif substage == "data_balancing":
+        from . import data_balancing
+        return data_balancing.run(action, cfg)
     else:
         # Unknown substage
         formatter = ImageProcessingFormatter(
@@ -38,7 +41,7 @@ def run(action: str, cfg: Dict) -> int:
         )
         formatter.error(f"Unknown substage: {substage}", {
             "cause": f"Invalid substage '{substage}' in configuration",
-            "next_steps": "Valid substages: center_crop, image_enhancement"
+            "next_steps": "Valid substages: center_crop, image_enhancement, data_balancing"
         })
         formatter.footer(exit_code=2)
         return 2
