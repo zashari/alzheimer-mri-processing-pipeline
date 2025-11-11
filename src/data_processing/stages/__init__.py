@@ -40,6 +40,7 @@ def available_stages() -> Dict[str, Type[BaseStage]]:
 try:  # pragma: no cover
     from . import environment_setup_stage  # noqa: F401
     from . import data_preparation_stage  # noqa: F401
+    from . import nifti_processing_stage  # noqa: F401
     from . import image_processing_stage  # noqa: F401
 except Exception:
     # It's okay if import fails in some tooling contexts; CLI will import later
