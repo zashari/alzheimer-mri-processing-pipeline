@@ -61,6 +61,13 @@ def build_parser() -> argparse.ArgumentParser:
     nifti.add_argument("--device", dest="device", choices=["cuda", "cpu", "mps"], default=None)
     nifti.add_argument("--use-tta", dest="use_tta", choices=["true", "false"], default=None)
 
+    # image_processing
+    img = sub.add_parser("image_processing", help="Image processing stage")
+    img.add_argument("action", choices=["test", "process"])
+    img.add_argument("--substage", dest="substage",
+                     choices=["center_crop", "image_enhancement", "data_balancing"],
+                     default="center_crop", help="Substage to execute (default: center_crop)")
+
     return p
 
 
@@ -92,7 +99,12 @@ def _apply_stage_cli_options(raw_cfg: Dict, args: argparse.Namespace) -> Dict:
 
     # nifti_processing options
     if getattr(args, "substage", None):
-        set_in(["nifti_processing", "substage"], args.substage)
+        # Check if this is nifti_processing stage by checking if device/use_tta exist
+        if hasattr(args, "device") or hasattr(args, "use_tta"):
+            set_in(["nifti_processing", "substage"], args.substage)
+        # Otherwise check if stage is image_processing
+        elif args.stage == "image_processing":
+            set_in(["image_processing", "substage"], args.substage)
     if getattr(args, "device", None):
         set_in(["nifti_processing", "skull_stripping", "device"], args.device)
     if getattr(args, "use_tta", None) is not None:

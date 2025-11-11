@@ -1,1 +1,51 @@
-# configs for image processing step
+############################################
+# Image Processing Stage Configuration     #
+############################################
+
+image_processing:
+  # Sub-stage to execute (center_crop, image_enhancement, data_balancing)
+  substage: "center_crop"
+
+  # Center Crop Configuration
+  center_crop:
+    # Input/Output paths (relative to output_root)
+    input_dir: "5_twoD"  # Output from twoD_conversion
+    output_dir: "6_center_crop"  # Where to save cropped files
+
+    # Slice types to process
+    slice_types: ["axial", "coronal", "sagittal"]
+
+    # Data splits
+    splits: ["train", "val", "test"]
+
+    # Group labels to use
+    groups: ["AD", "CN"]  # Exclude MCI if not needed
+
+    # Required visits for complete sequences
+    required_visits: ["sc", "m06", "m12"]
+
+    # Processing parameters
+    crop_padding: 5  # Padding to add around brain bounding box (pixels)
+    target_size: [256, 256]  # Target resolution for output images (width, height)
+    rotation_angle: 180  # Rotation angle in degrees
+
+    # Visualization
+    visualization:
+      enabled: true
+      sample_size: 3  # Number of samples to visualize per group
+      output_dir: null  # If null, uses .visualizations/image_processing/center_crop/
+
+    # Test mode settings (for 'test' action)
+    test:
+      num_samples: 5  # Number of sample files to test
+      save_visualization: true
+
+  # Image Enhancement Configuration (placeholder for future implementation)
+  image_enhancement:
+    # Placeholder - to be implemented
+    enabled: false
+
+  # Data Balancing Configuration (placeholder for future implementation)
+  data_balancing:
+    # Placeholder - to be implemented
+    enabled: false
