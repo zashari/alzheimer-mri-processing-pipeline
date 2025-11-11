@@ -40,7 +40,7 @@ By participating in this project, you agree to abide by our [Code of Conduct](CO
 
 - Update README.md if adding new features or changing behavior
 - Add docstrings to new functions and classes
-- Update CHANGELOG.md for user-facing changes
+- Update [docs/CHANGELOG.md](docs/CHANGELOG.md) for user-facing changes
 
 ### Adding References
 

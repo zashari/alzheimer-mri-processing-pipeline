@@ -45,7 +45,7 @@ When using this pipeline with sensitive medical data (e.g., ADNI data):
 2. **Do not upload data** to public-facing AI tools or cloud services without proper safeguards
 3. **Use secure environments** for data processing
 4. **Keep dependencies updated** to avoid known vulnerabilities
-5. **Review third-party tool licenses** (see THIRD_PARTY_NOTICES.md)
+5. **Review third-party tool licenses** (see [docs/THIRD_PARTY_NOTICES.md](docs/THIRD_PARTY_NOTICES.md))
 
 ### Scope
 
@@ -62,7 +62,7 @@ This security policy applies to:
 Security updates will be:
 
 - Released as patch versions (e.g., 0.1.1, 0.1.2)
-- Documented in CHANGELOG.md
+- Documented in [docs/CHANGELOG.md](docs/CHANGELOG.md)
 - Tagged with appropriate security labels
 
 Thank you for helping keep this project secure!

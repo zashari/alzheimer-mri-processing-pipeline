@@ -189,4 +189,4 @@ This work was developed as part of a final-year thesis project. Special thanks t
 
 This project is licensed under the **MIT License**. See the [LICENSE](LICENSE) file for details.
 
-**Third-party dependencies** (e.g., HD-BET, ANTs) have their own licenses. Please review and comply with their respective license terms. See [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md) for details.
+**Third-party dependencies** (e.g., HD-BET, ANTs) have their own licenses. Please review and comply with their respective license terms. See [docs/THIRD_PARTY_NOTICES.md](docs/THIRD_PARTY_NOTICES.md) for details.
