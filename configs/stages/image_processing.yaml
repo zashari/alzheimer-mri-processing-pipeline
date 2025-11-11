@@ -40,10 +40,47 @@ image_processing:
       num_samples: 5  # Number of sample files to test
       save_visualization: true
 
-  # Image Enhancement Configuration (placeholder for future implementation)
+  # Image Enhancement Configuration
   image_enhancement:
-    # Placeholder - to be implemented
-    enabled: false
+    # Input/Output paths (relative to output_root)
+    input_dir: "6_center_crop"  # Output from center_crop
+    output_dir: "7_enhanced"  # Where to save enhanced files
+
+    # Enhancement method: 'adaptive', 'clahe', 'gabor', 'unsharp'
+    method: "adaptive"
+
+    # Grey Wolf Optimizer parameters
+    gwo_iterations: 30  # Number of GWO optimization iterations
+    num_wolves: 15  # Number of wolves in GWO pack
+
+    # Parallel processing
+    max_workers: 4  # Number of parallel workers
+
+    # Slice types to process
+    slice_types: ["axial", "coronal", "sagittal"]
+
+    # Data splits
+    splits: ["train", "val", "test"]
+
+    # Group labels to use
+    groups: ["AD", "CN"]  # Exclude MCI if not needed
+
+    # Required visits for complete sequences
+    required_visits: ["sc", "m06", "m12"]
+
+    # Optional: Limit number of images per class (None = process all)
+    max_images_per_class: null
+
+    # Visualization
+    visualization:
+      enabled: true
+      sample_size: 6  # Number of sample images to visualize
+      output_dir: null  # If null, uses .visualizations/image_processing/image_enhancement/
+
+    # Test mode settings (for 'test' action)
+    test:
+      num_samples: 3  # Number of sample files to test
+      save_visualization: true
 
   # Data Balancing Configuration (placeholder for future implementation)
   data_balancing:
