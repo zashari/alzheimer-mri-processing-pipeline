@@ -6,7 +6,7 @@ We currently support the following versions with security updates:
 
 | Version | Supported          |
 | ------- | ------------------ |
-| 0.1.x   | :white_check_mark: |
+| 1.0.x   | :white_check_mark: |
 
 ## Reporting a Vulnerability
 
@@ -61,7 +61,7 @@ This security policy applies to:
 
 Security updates will be:
 
-- Released as patch versions (e.g., 0.1.1, 0.1.2)
+- Released as patch versions (e.g., 1.0.1, 1.0.2)
 - Documented in [docs/CHANGELOG.md](docs/CHANGELOG.md)
 - Tagged with appropriate security labels
 

@@ -5,6 +5,36 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.0] - 2025-11-11
+
+### Added
+- Complete image processing stage with three sub-stages:
+  - Center crop: Temporal sequence extraction and cropping
+  - Image enhancement: Grey Wolf Optimizer-based enhancement
+  - Data balancing: Augmentation and class balancing
+- Template download instructions for MNI brain and hippocampus ROI masks
+- Documentation reorganization: moved CHANGELOG and THIRD_PARTY_NOTICES to docs/ directory
+
+### Fixed
+- Critical bug: Added missing `nifti_processing_stage` import in stage registry
+- Removed empty `visualizations/` directory that was not being used
+
+### Changed
+- Project status updated from pre-release (WIP) to stable release
+- Version bumped from 0.1.0 to 1.0.0
+- Updated all version references across documentation files
+
+### Removed
+- Unused files: `config/validators.py`, `utils/timers.py`, `paths.py`
+- Empty visualizations module directory
+
+### Documentation
+- Added README files in template directories with download instructions
+- Reorganized documentation structure for better maintainability
+- Updated cross-references after file reorganization
+
+[1.0.0]: https://github.com/zashari/alzheimer-mri-processing-pipeline/releases/tag/v1.0.0
+
 ## [0.1.0] - 2025-11-09
 
 ### Added
