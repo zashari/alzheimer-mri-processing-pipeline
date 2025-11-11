@@ -1,7 +1,7 @@
 cff-version: 1.2.0
 message: "If you use this pipeline, please cite it as below."
 title: "alzheimer-mri-processing-pipeline"
-version: "1.0.0"
+version: "1.1.1"
 date-released: "2025-11-11"
 repository-code: "https://github.com/zashari/alzheimer-mri-processing-pipeline"
 url: "https://github.com/zashari/alzheimer-mri-processing-pipeline"
@@ -16,4 +16,4 @@ preferred-citation:
     - family-names: "Ashari"
       given-names: "Zaky"
   year: 2025
-  notes: "Version 1.0.0. See README for third-party references."
+  notes: "Version 1.1.1. See README for third-party references."

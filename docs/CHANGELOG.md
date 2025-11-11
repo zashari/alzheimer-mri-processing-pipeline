@@ -5,6 +5,25 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.1.1] - 2025-11-11
+
+### Fixed
+- Fixed missing dependencies: Added `rich` (>=13.0.0) and `seaborn` (>=0.13.0) to `pyproject.toml`
+- Resolved stage registration issue: All stages now register correctly after dependency installation
+- Updated `requirements.txt` to include optional `antspyx` dependency with installation notes
+
+### Changed
+- Improved dependency management: Configured Poetry with PyTorch CUDA wheel source
+- Updated `requirements.txt` format to use `--index-url` for PyTorch packages
+- Enhanced documentation: Added comments in `requirements.txt` explaining optional dependencies
+
+### Dependencies
+- Added `rich==13.9.4` for enhanced console output formatting
+- Added `seaborn==0.13.2` for visualization support
+- Added `antspyx>=0.3.0` (optional) to `requirements.txt` for template registration stage
+
+[1.1.1]: https://github.com/zashari/alzheimer-mri-processing-pipeline/releases/tag/v1.1.1
+
 ## [1.1.0] - 2025-11-11
 
 ### Added

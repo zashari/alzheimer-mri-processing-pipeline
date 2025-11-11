@@ -42,3 +42,6 @@ build/
 00_CITATION_GUIDE.md
 00_SANITY_CHECK_FROM_GPT.md
 00_ SPECS_PROJECTION_FROM_GPT.md
+
+# Local activation scripts
+activate_openAD.bat
