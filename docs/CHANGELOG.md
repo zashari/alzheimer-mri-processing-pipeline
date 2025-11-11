@@ -5,6 +5,29 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.1.0] - 2025-11-11
+
+### Added
+- Convenience wrapper scripts for easier pipeline execution:
+  - Individual stage scripts for Unix/Linux/macOS (`.sh`) and Windows (`.bat`):
+    - `run_environment_setup`: Environment setup with GPU detection
+    - `run_data_preparation`: Data splitting and analysis
+    - `run_nifti_processing`: All NIfTI processing substages sequentially
+    - `run_image_processing`: All image processing substages sequentially
+  - Full pipeline scripts for end-to-end execution:
+    - `run_full_pipeline.sh` / `run_full_pipeline.bat`: Complete pipeline in one go
+- Comprehensive scripts documentation (`scripts/README.md`) with usage instructions
+
+### Changed
+- Improved user experience for non-technical users with simplified command execution
+- Scripts include error handling and progress indicators
+
+### Documentation
+- Added detailed README in scripts directory explaining script usage and alternatives
+- Documented prerequisites and troubleshooting tips for script execution
+
+[1.1.0]: https://github.com/zashari/alzheimer-mri-processing-pipeline/releases/tag/v1.1.0
+
 ## [1.0.0] - 2025-11-11
 
 ### Added
