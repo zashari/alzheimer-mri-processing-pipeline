@@ -82,7 +82,48 @@ image_processing:
       num_samples: 3  # Number of sample files to test
       save_visualization: true
 
-  # Data Balancing Configuration (placeholder for future implementation)
+  # Data Balancing Configuration
   data_balancing:
-    # Placeholder - to be implemented
-    enabled: false
+    # Input/Output paths (relative to output_root)
+    input_dir: "7_enhanced"  # Output from image_enhancement
+    output_dir: "8_balanced"  # Where to save balanced files
+
+    # Slice types to process
+    slice_types: ["axial", "coronal", "sagittal"]
+
+    # Group labels to use
+    groups: ["AD", "CN"]  # Exclude MCI if not needed
+
+    # Required visits for complete sequences
+    required_visits: ["sc", "m06", "m12"]
+
+    # Augmentation targets: {group: {current: int, target: int}}
+    # Note: current counts are auto-detected, only target needs to be specified
+    augmentation_targets:
+      AD:
+        target: 180  # Target number of subjects for AD class
+      CN:
+        target: 180  # Target number of subjects for CN class
+
+    # Augmentation parameter ranges
+    augmentation_params:
+      rotation_range: [-10, 10]  # Rotation angle in degrees
+      translation_range: [-10, 10]  # Translation in pixels
+      elastic_alpha_range: [20, 40]  # Elastic deformation alpha
+      elastic_sigma_range: [4, 6]  # Elastic deformation sigma
+      bias_scale_range: [0.2, 0.4]  # Bias field scale
+      motion_kernels: [3, 5, 7]  # Motion blur kernel sizes
+      gamma_range: [0.8, 1.2]  # Gamma correction range
+      noise_sigma_range: [5, 15]  # Rician noise sigma
+      intensity_shift_range: [-15, 15]  # Intensity shift range
+      motion_probability: 0.5  # Probability of applying motion blur (0.0-1.0)
+      elastic_probability: 0.7  # Probability of applying elastic deformation (0.0-1.0)
+
+    # Visualization
+    visualization:
+      enabled: true
+      output_dir: null  # If null, uses .visualizations/image_processing/data_balancing/
+
+    # Test mode settings (for 'test' action)
+    test:
+      num_samples: 2  # Number of augmented subjects to create per class in test mode
