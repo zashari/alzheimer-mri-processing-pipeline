@@ -5,6 +5,36 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.4.2] - 2025-11-12
+
+### Fixed
+- **Windows file locking issue**: Fixed `PermissionError` when deleting temporary files on Windows
+  - Changed `HDBETProcessor.process_file()` to use `subprocess.PIPE` instead of file handles
+  - Eliminates Windows file locking issues where temp files couldn't be deleted after subprocess completion
+  - Improved cross-platform compatibility (Windows, Linux, macOS)
+  - No more `[WinError 32] The process cannot access the file` errors
+
+### Changed
+- **Subprocess output handling**: Refactored to use pipes instead of temporary files for stdout/stderr
+  - Uses `subprocess.PIPE` for stdout and stderr redirection
+  - Reads output directly from pipes using `process.communicate()`
+  - Removed temporary file creation for subprocess output (stdout/stderr)
+  - More efficient and avoids file system operations for output capture
+- **Error message extraction**: Error messages now read directly from stderr pipe
+  - No longer requires opening temp files for error reading
+  - Cleaner error handling flow
+  - Same error message format (first 500 chars of stderr)
+
+### Technical Details
+- Modified `process_file()` to use `subprocess.PIPE` for stdout/stderr
+- Changed from `process.wait()` + file reading to `process.communicate()` for pipe-based output
+- Updated `check_availability()` to also use `subprocess.PIPE` for consistency
+- Removed `temp_stdout` and `temp_stderr` file creation and cleanup
+- Added proper pipe cleanup in timeout handling
+- Maintains all existing functionality while fixing Windows compatibility
+
+[1.4.2]: https://github.com/zashari/alzheimer-mri-processing-pipeline/releases/tag/v1.4.2
+
 ## [1.4.1] - 2025-11-12
 
 ### Fixed

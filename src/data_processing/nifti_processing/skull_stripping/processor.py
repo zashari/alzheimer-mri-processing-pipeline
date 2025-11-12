@@ -35,21 +35,14 @@ class HDBETProcessor:
     def check_availability(self) -> bool:
         """Check if HD-BET is installed and accessible."""
         try:
-            # Create temp files for output
-            temp_out = self.temp_dir / "hd_bet_test.txt"
-            temp_err = self.temp_dir / "hd_bet_test_err.txt"
-
-            with open(temp_out, "w") as fout, open(temp_err, "w") as ferr:
-                result = subprocess.run(
-                    ["hd-bet", "--help"],
-                    stdout=fout,
-                    stderr=ferr,
-                    timeout=60,
-                )
-
-            # Clean up temp files
-            temp_out.unlink(missing_ok=True)
-            temp_err.unlink(missing_ok=True)
+            # Use PIPE to avoid file locking issues
+            result = subprocess.run(
+                ["hd-bet", "--help"],
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                text=True,
+                timeout=60,
+            )
 
             return result.returncode == 0
 
@@ -89,10 +82,7 @@ class HDBETProcessor:
         with self.dir_lock:
             output_brain.parent.mkdir(parents=True, exist_ok=True)
 
-        # Create temporary files for subprocess output
         task_id = task_id or f"{time.time()}"
-        temp_stdout = self.temp_dir / f"hd_bet_{task_id}.out"
-        temp_stderr = self.temp_dir / f"hd_bet_{task_id}.err"
 
         try:
             # HD-BET requires output to end with .nii.gz
@@ -114,50 +104,63 @@ class HDBETProcessor:
             # Save mask file
             cmd.append("--save_bet_mask")
 
-            # Run HD-BET with output redirection
-            with open(temp_stdout, "w") as fout, open(temp_stderr, "w") as ferr:
-                # Create process with proper cleanup handling
-                if os.name != "nt":  # Unix-like systems
-                    process = subprocess.Popen(
-                        cmd,
-                        stdout=fout,
-                        stderr=ferr,
-                        close_fds=True,
-                        preexec_fn=os.setsid
-                    )
-                else:  # Windows
-                    process = subprocess.Popen(
-                        cmd,
-                        stdout=fout,
-                        stderr=ferr,
-                        close_fds=True
-                    )
+            # Run HD-BET with PIPE to avoid file locking issues on Windows
+            # Use PIPE instead of file handles for cross-platform compatibility
+            if os.name != "nt":  # Unix-like systems
+                process = subprocess.Popen(
+                    cmd,
+                    stdout=subprocess.PIPE,
+                    stderr=subprocess.PIPE,
+                    text=True,
+                    close_fds=True,
+                    preexec_fn=os.setsid
+                )
+            else:  # Windows
+                process = subprocess.Popen(
+                    cmd,
+                    stdout=subprocess.PIPE,
+                    stderr=subprocess.PIPE,
+                    text=True,
+                    close_fds=True
+                )
 
-                try:
-                    # Wait for completion with timeout
-                    returncode = process.wait(timeout=self.timeout_sec)
+            try:
+                # Wait for completion and read output from pipes
+                # communicate() handles both waiting and reading output
+                stdout_data, stderr_data = process.communicate(timeout=self.timeout_sec)
 
-                    if returncode != 0:
-                        # Read error output for debugging
-                        with open(temp_stderr, "r") as ferr:
-                            error_msg = ferr.read()[:500]  # First 500 chars
-                        return "error", f"HD-BET failed (code {returncode}): {error_msg}"
+                if process.returncode != 0:
+                    # Extract error message from stderr (first 500 chars)
+                    error_msg = (stderr_data[:500] if stderr_data else "Unknown error")
+                    return "error", f"HD-BET failed (code {process.returncode}): {error_msg}"
 
-                except subprocess.TimeoutExpired:
-                    # Kill the process on timeout
-                    if os.name != "nt":
-                        try:
-                            os.killpg(os.getpgid(process.pid), signal.SIGTERM)
-                            time.sleep(2)
-                            os.killpg(os.getpgid(process.pid), signal.SIGKILL)
-                        except:
-                            process.kill()
-                    else:
-                        process.terminate()
+            except subprocess.TimeoutExpired:
+                # Kill the process on timeout
+                if os.name != "nt":
+                    try:
+                        os.killpg(os.getpgid(process.pid), signal.SIGTERM)
                         time.sleep(2)
+                        os.killpg(os.getpgid(process.pid), signal.SIGKILL)
+                    except:
                         process.kill()
+                else:
+                    process.terminate()
+                    time.sleep(2)
+                    process.kill()
 
-                    return "timeout", f"Timeout after {self.timeout_sec}s"
+                # Clean up pipes after killing process
+                if process.stdout:
+                    process.stdout.close()
+                if process.stderr:
+                    process.stderr.close()
+
+                return "timeout", f"Timeout after {self.timeout_sec}s"
+            finally:
+                # Ensure pipes are closed
+                if process.stdout:
+                    process.stdout.close()
+                if process.stderr:
+                    process.stderr.close()
 
             # HD-BET creates files with specific naming
             hd_bet_brain = temp_output
@@ -185,10 +188,8 @@ class HDBETProcessor:
             return "error", str(e)
 
         finally:
-            # Clean up temporary files
-            temp_stdout.unlink(missing_ok=True)
-            temp_stderr.unlink(missing_ok=True)
-            # Clean up any remaining temp files
+            # Clean up any remaining temp output files (HD-BET output files)
+            # Note: stdout/stderr temp files are no longer needed since we use PIPE
             for temp_file in output_brain.parent.glob(f"temp_{task_id}*"):
                 temp_file.unlink(missing_ok=True)
 
