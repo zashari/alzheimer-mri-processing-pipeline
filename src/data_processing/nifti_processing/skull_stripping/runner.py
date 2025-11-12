@@ -170,35 +170,41 @@ def run_test(cfg: Dict, formatter: NiftiFormatter) -> int:
 
     # Process sample files
     results = []
-    for i, input_file in enumerate(sample_files):
-        formatter.console.print(f"\n[blue]Processing file {i+1}/{len(sample_files)}:[/blue] {input_file.name}")
+    with formatter.create_progress_bar() as progress:
+        task = progress.add_task("Processing test files", total=len(sample_files))
 
-        # Create output paths
-        output_brain = test_output / f"test_{i}_brain.nii.gz"
-        output_mask = test_output / f"test_{i}_mask.nii.gz"
+        for i, input_file in enumerate(sample_files):
+            progress.update(task, description=f"Processing {input_file.name}")
 
-        # Process file
-        start_time = time.time()
-        status, error_msg = processor.process_file(
-            input_file, output_brain, output_mask, f"test_{i}"
-        )
-        process_time = time.time() - start_time
+            # Create output paths
+            output_brain = test_output / f"test_{i}_brain.nii.gz"
+            output_mask = test_output / f"test_{i}_mask.nii.gz"
 
-        # Store result
-        result = {
-            "input_file": input_file.name,
-            "success": status == "success",
-            "time": process_time,
-            "brain_file": str(output_brain) if output_brain.exists() else None,
-            "mask_file": str(output_mask) if output_mask.exists() else None,
-            "error": error_msg
-        }
-        results.append(result)
+            # Process file
+            start_time = time.time()
+            status, error_msg = processor.process_file(
+                input_file, output_brain, output_mask, f"test_{i}"
+            )
+            process_time = time.time() - start_time
 
-        if status == "success":
-            formatter.success(f"Completed in {process_time:.1f}s")
-        else:
-            formatter.error(f"Failed: {error_msg}")
+            # Store result
+            result = {
+                "input_file": input_file.name,
+                "success": status == "success",
+                "time": process_time,
+                "brain_file": str(output_brain) if output_brain.exists() else None,
+                "mask_file": str(output_mask) if output_mask.exists() else None,
+                "error": error_msg
+            }
+            results.append(result)
+
+            # Update progress bar
+            progress.update(task, advance=1)
+
+            if status == "success":
+                formatter.success(f"Completed {input_file.name} in {process_time:.1f}s")
+            else:
+                formatter.error(f"Failed {input_file.name}: {error_msg}")
 
     # Show results
     formatter.test_results(results)
