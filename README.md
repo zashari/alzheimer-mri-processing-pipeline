@@ -217,131 +217,11 @@ Before running the pipeline, download the required template files:
 
 ## Quick Start
 
-### 1. Basic Setup
+After installation and configuration, run the pipeline using the provided convenience scripts:
 
-```bash
-# Activate your virtual environment
-# Windows: venv\Scripts\activate
-# Linux/macOS: source venv/bin/activate
+### Option 1: Run Individual Stages (Recommended)
 
-# Run environment setup
-adp environment_setup setup --auto-install true --perf-test quick
-```
-
-### 2. Prepare Your Data
-
-```bash
-# Split data into train/val/test
-adp data_preparation split
-
-# Analyze metadata
-adp data_preparation analyze
-```
-
-### 3. Process NIfTI Files
-
-```bash
-# Test each substage on samples before full processing
-adp nifti_processing test --substage skull_stripping
-adp nifti_processing test --substage template_registration
-adp nifti_processing test --substage labelling
-adp nifti_processing test --substage twoD_conversion
-
-# Process all files (run after successful tests)
-adp nifti_processing process --substage skull_stripping
-adp nifti_processing process --substage template_registration
-adp nifti_processing process --substage labelling
-adp nifti_processing process --substage twoD_conversion
-```
-
-### 4. Process Images
-
-```bash
-# Test each substage on samples before full processing
-adp image_processing test --substage center_crop
-adp image_processing test --substage image_enhancement
-adp image_processing test --substage data_balancing
-
-# Process all files (run after successful tests)
-adp image_processing process --substage center_crop
-adp image_processing process --substage image_enhancement
-adp image_processing process --substage data_balancing
-```
-
-### 5. Run Full Pipeline (Advanced)
-
-For users with sufficient resources, run the complete pipeline:
-
-```bash
-# Windows
-scripts\windows_based_system\run_full_pipeline.bat
-
-# Linux/macOS
-./scripts/unix_based_system/run_full_pipeline.sh
-```
-
-**Warning:** This will run all stages sequentially and may take several hours.
-
----
-
-## Usage
-
-### Command-Line Interface (CLI)
-
-The pipeline provides a unified CLI through the `adp` command (or `python -m data_processing.cli`).
-
-#### General Syntax
-
-```bash
-adp <stage> <action> [options]
-```
-
-#### Available Stages
-
-- `environment_setup` - Environment configuration and verification
-- `data_preparation` - Data splitting and analysis
-- `nifti_processing` - NIfTI file processing (4 substages)
-- `image_processing` - Image processing (3 substages)
-
-#### Common Options
-
-- `--config <path>` - Specify custom configuration file
-- `--stage-config <path>` - Override stage-specific config file path
-- `--set <key=value>` - Override configuration values (repeatable, use comma for arrays)
-- `--debug` - Enable debug output
-- `--quiet` - Suppress non-essential output
-- `--dry-run` - Show what would be done without executing
-- `--log-file <path>` - Write logs to file
-- `--seed <int>` - Set random seed
-- `--workers <int>` - Number of parallel workers
-- `--version` - Show version information
-
-#### Examples
-
-```bash
-# Environment setup with full performance test
-adp environment_setup setup --auto-install true --perf-test full
-
-# Data preparation with custom split ratios (must sum to 1.0, comma-separated)
-adp data_preparation split --set data_preparation.split_ratios=0.7,0.2,0.1
-
-# NIfTI processing with specific substage and debug output
-adp nifti_processing process --substage skull_stripping --debug
-
-# Image processing with custom output root (affects all stages)
-adp image_processing process --substage center_crop --set paths.output_root=/custom/output/path
-
-# Or override stage-specific output directory
-adp image_processing process --substage center_crop --set image_processing.center_crop.output_dir=custom_center_crop
-```
-
-### Convenience Scripts
-
-For non-technical users or quick execution, use the provided convenience scripts:
-
-#### Individual Stage Scripts
-
-Run stages one-by-one with progress monitoring:
+Execute stages one-by-one to monitor progress:
 
 **Windows:**
 ```cmd
@@ -359,9 +239,9 @@ scripts\windows_based_system\run_image_processing.bat
 ./scripts/unix_based_system/run_image_processing.sh
 ```
 
-#### Full Pipeline Scripts
+### Option 2: Run Full Pipeline (Advanced)
 
-Run the complete pipeline end-to-end (requires significant resources):
+For users with sufficient resources, run everything in one go:
 
 **Windows:**
 ```cmd
@@ -373,47 +253,60 @@ scripts\windows_based_system\run_full_pipeline.bat
 ./scripts/unix_based_system/run_full_pipeline.sh
 ```
 
+**⚠️ Warning:** The full pipeline runs all stages sequentially and may take several hours.
+
+### Using CLI for Advanced Control
+
+If you need to customize parameters or use specific options, use the `adp` CLI command directly. See the [Usage](#usage) section below for details.
+
+---
+
+## Usage
+
+### Using Convenience Scripts (Recommended)
+
+The easiest way to run the pipeline is using the provided convenience scripts. They handle all the necessary commands automatically.
+
+#### What Each Script Does
+
+- **`run_environment_setup`** - GPU detection, package installation, performance testing
+- **`run_data_preparation`** - Data splitting and metadata analysis
+- **`run_nifti_processing`** - All NIfTI processing substages (skull stripping → template registration → labelling → 2D conversion)
+- **`run_image_processing`** - All image processing substages (center crop → enhancement → balancing)
+- **`run_full_pipeline`** - Complete pipeline end-to-end (all stages sequentially)
+
 For detailed script documentation, see [`scripts/README.md`](scripts/README.md).
 
-### Pipeline Stages
+### Using CLI for Advanced Control
 
-#### Stage 1: Environment Setup
+If you need to customize parameters, use specific options, or run individual substages, use the `adp` command directly:
+
+#### General Syntax
 
 ```bash
-# Verify environment without installation
-adp environment_setup verify
-
-# Setup with automatic package installation
-adp environment_setup setup --auto-install true
-
-# Full setup with performance testing
-adp environment_setup setup --auto-install true --perf-test full
+adp <stage> <action> [--substage <substage>] [options]
 ```
 
-**Actions:**
-- `verify` - Check GPU, dependencies, and environment
-- `setup` - Full environment setup with optional auto-install
+#### Available Stages & Actions
 
-#### Stage 2: Data Preparation
-
+**Environment Setup:**
 ```bash
-# Split data into train/val/test sets
-adp data_preparation split
-
-# Analyze metadata and generate statistics
-adp data_preparation analyze
+adp environment_setup verify                    # Quick verification
+adp environment_setup setup --auto-install true # Full setup
 ```
 
-**Actions:**
-- `split` - Stratified data splitting
-- `analyze` - Metadata analysis and statistics
-- `manifests` - Generate manifest CSV files without file copying
-
-#### Stage 3: NIfTI Processing
-
+**Data Preparation:**
 ```bash
-# Test on a sample before full processing
+adp data_preparation split                      # Split data
+adp data_preparation analyze                    # Analyze metadata
+adp data_preparation manifests                  # Generate manifests only
+```
+
+**NIfTI Processing:**
+```bash
+# Test mode (process samples)
 adp nifti_processing test --substage skull_stripping
+adp nifti_processing test --substage template_registration
 
 # Process all files
 adp nifti_processing process --substage skull_stripping
@@ -422,93 +315,96 @@ adp nifti_processing process --substage labelling
 adp nifti_processing process --substage twoD_conversion
 ```
 
-**Substages:**
-- `skull_stripping` - HD-BET-based brain extraction
-- `template_registration` - ANTs-based MNI template alignment
-- `labelling` - Temporal sequence organization
-- `twoD_conversion` - NIfTI to PNG conversion
-
-#### Stage 4: Image Processing
-
+**Image Processing:**
 ```bash
-# Process images sequentially
 adp image_processing process --substage center_crop
 adp image_processing process --substage image_enhancement
 adp image_processing process --substage data_balancing
 ```
 
-**Substages:**
-- `center_crop` - Temporal sequence extraction
-- `image_enhancement` - Grey Wolf Optimizer-based enhancement
-- `data_balancing` - Augmentation and class balancing
+#### Common CLI Options
+
+- `--set <key=value>` - Override configuration values (repeatable, use comma for arrays)
+- `--config <path>` - Specify custom configuration file
+- `--debug` - Enable debug output
+- `--quiet` - Suppress non-essential output
+- `--dry-run` - Show what would be done without executing
+- `--seed <int>` - Set random seed for reproducibility
+- `--log-file <path>` - Write logs to file
+
+#### CLI Examples
+
+```bash
+# Custom split ratios (must sum to 1.0)
+adp data_preparation split --set data_preparation.split_ratios=0.7,0.2,0.1
+
+# Use CPU instead of GPU for skull stripping
+adp nifti_processing process --substage skull_stripping --set nifti_processing.skull_stripping.device=cpu
+
+# Custom output directory
+adp image_processing process --substage center_crop --set paths.output_root=/custom/output/path
+
+# Debug mode with custom seed
+adp data_preparation split --debug --seed 12345
+```
 
 ---
 
 ## Configuration
 
-The pipeline uses YAML-based configuration files located in the `configs/` directory.
+The pipeline uses YAML-based configuration files with hierarchical override support. Configuration is loaded from multiple sources in this order (later sources override earlier ones):
 
-### Configuration Files
+1. `configs/default.yaml` - Main configuration (paths, global settings)
+2. `configs/stages/*.yaml` - Stage-specific defaults
+3. User config file (via `--config`)
+4. Environment variables (`ADP_*` prefix)
+5. CLI overrides (via `--set`)
 
-- `configs/default.yaml` - Main configuration file
-- `configs/stages/environment_setup.yaml` - Environment setup settings
-- `configs/stages/data_preparation.yaml` - Data preparation settings
-- `configs/stages/nifti_processing.yaml` - NIfTI processing settings
-- `configs/stages/image_processing.yaml` - Image processing settings
+### Essential Configuration
 
-### Key Configuration Sections
-
-#### Paths
+Before running the pipeline, configure these paths in `configs/default.yaml`:
 
 ```yaml
 paths:
-  data_root: "path/to/raw/nifti/files"  # Root directory containing ADNI-like dataset structure
-  output_root: "outputs"  # Base output directory (relative to project root)
-  metadata_csv: "path/to/metadata.csv"  # Primary metadata CSV file path
+  data_root: "path/to/raw/nifti_files"      # Your raw dataset directory (example: {your_project/datasets/ADNI_1_5_T/})
+  output_root: "outputs"                     # Output directory (relative to project root)
+  metadata_csv: "path/to/metadata.csv"       # Primary metadata CSV file path (example: {your_project/datasets/ADNI_1_5_T/metadata.csv})
 ```
 
-#### Data Preparation
+### Key Settings
 
-```yaml
-data_preparation:
-  required_visits: ["sc", "m06", "m12"]  # Required visits for complete sequences
-  split_ratios: [0.7, 0.15, 0.15]  # Train/Val/Test ratios (must sum to 1.0)
-  stratify_by: "Group"  # Column name for stratification
-  shuffle: true  # Shuffle subjects before splitting
-```
+**Data Preparation:**
+- `required_visits`: `["sc", "m06", "m12"]` - Required visits for complete sequences
+- `split_ratios`: `[0.7, 0.15, 0.15]` - Train/Val/Test ratios (must sum to 1.0)
+- `stratify_by`: `"Group"` - Column name for stratification
 
-#### NIfTI Processing
+**NIfTI Processing:**
+- `device`: `"cuda"` - Processing device (`"cuda"`, `"cpu"`, or `"mps"`)
+- `mni_template_path`: Path to MNI brain template
+- `hippocampus_roi_path`: Path to hippocampus ROI mask
 
-```yaml
-nifti_processing:
-  skull_stripping:
-    device: "cuda"  # Options: "cuda", "cpu", "mps"
-    use_tta: false  # Test-time augmentation
-  template_registration:
-    mni_template_path: "support_files/templates/mni-brain/MNI152_T1_1mm_brain.nii.gz"
-    hippocampus_roi_path: "support_files/templates/hippocampal-roi/hippho50.nii.gz"
-    registration:
-      type: "SyNAggro"  # Options: "SyN", "SyNRA", "SyNAggro", "SyNCC", "Affine", "Rigid"
-      num_threads: 8
-```
+**Image Processing:**
+- `augmentation_targets`: Target counts per class for data balancing
+- `gwo_iterations`: Number of Grey Wolf Optimizer iterations for enhancement
 
 ### Overriding Configuration
 
-You can override configuration values via CLI:
+You can override any configuration value via CLI without editing files:
 
 ```bash
-# Single override - update split ratios (must sum to 1.0, comma-separated)
+# Override split ratios
 adp data_preparation split --set data_preparation.split_ratios=0.7,0.2,0.1
 
-# Multiple overrides
+# Override device and other settings
 adp nifti_processing process --substage skull_stripping \
   --set nifti_processing.skull_stripping.device=cpu \
   --set nifti_processing.skull_stripping.use_tta=true
 
-# Override template paths
-adp nifti_processing process --substage template_registration \
-  --set nifti_processing.template_registration.mni_template_path=/custom/path/to/template.nii.gz
+# Use custom config file
+adp data_preparation split --config my_custom_config.yaml
 ```
+
+For complete configuration options, see the YAML files in `configs/` directory.
 
 ---
 
