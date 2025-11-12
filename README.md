@@ -18,10 +18,12 @@ A **complete, production-ready 3D NIfTI preprocessing pipeline** for ADNI T1-wei
 - [Installation](#installation)
 - [Quick Start](#quick-start)
 - [Usage](#usage)
-  - [Command-Line Interface (CLI)](#command-line-interface-cli)
-  - [Convenience Scripts](#convenience-scripts)
-  - [Pipeline Stages](#pipeline-stages)
+  - [Using Convenience Scripts (Recommended)](#using-convenience-scripts-recommended)
+  - [Using CLI for Advanced Control](#using-cli-for-advanced-control)
 - [Configuration](#configuration)
+  - [Essential Configuration](#essential-configuration)
+  - [Key Settings](#key-settings)
+  - [Overriding Configuration](#overriding-configuration)
 - [Project Structure](#project-structure)
 - [Output Structure](#output-structure)
 - [Troubleshooting](#troubleshooting)
@@ -29,6 +31,7 @@ A **complete, production-ready 3D NIfTI preprocessing pipeline** for ADNI T1-wei
 - [Citation](#citation)
 - [Acknowledgments](#acknowledgments)
 - [License](#license)
+- [Additional Resources](#additional-resources)
 
 ---
 
