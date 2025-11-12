@@ -39,8 +39,78 @@ def get_gpu_memory_info() -> Optional[Dict]:
         return None
 
 
+def get_gpu_utilization() -> Optional[Dict]:
+    """
+    Get GPU utilization from nvidia-smi (system-wide, works across processes).
+    
+    Returns:
+        Dictionary with GPU utilization info or None if unavailable
+    """
+    try:
+        result = subprocess.run(
+            ["nvidia-smi", "--query-gpu=utilization.gpu,utilization.memory,memory.used,memory.total,name", 
+             "--format=csv,noheader,nounits"],
+            capture_output=True,
+            text=True,
+            timeout=5
+        )
+        
+        if result.returncode != 0 or not result.stdout.strip():
+            return None
+        
+        # Parse output: "util_gpu, util_mem, mem_used, mem_total, name"
+        # Split by ", " but handle GPU name which might contain commas
+        parts = result.stdout.strip().split(", ", 4)  # Split into max 5 parts
+        if len(parts) < 5:
+            return None
+        
+        util_gpu = float(parts[0])
+        util_mem = float(parts[1])
+        mem_used = float(parts[2])
+        mem_total = float(parts[3])
+        name = parts[4].strip()  # GPU name (may contain commas, but we've already split)
+        
+        return {
+            "utilization_gpu": util_gpu,
+            "utilization_memory": util_mem,
+            "memory_used_mb": mem_used,
+            "memory_total_mb": mem_total,
+            "memory_usage_percent": (mem_used / mem_total) * 100 if mem_total > 0 else 0,
+            "name": name
+        }
+    except (FileNotFoundError, subprocess.TimeoutExpired, ValueError, IndexError):
+        return None
+
+
 def get_gpu_info() -> Optional[Dict]:
-    """Get GPU device information."""
+    """
+    Get GPU device information with utilization from nvidia-smi.
+    
+    Falls back to PyTorch if nvidia-smi is unavailable, but prioritizes
+    system-wide GPU utilization over PyTorch-specific memory tracking.
+    """
+    # Try nvidia-smi first for system-wide GPU utilization
+    nvidia_info = get_gpu_utilization()
+    if nvidia_info:
+        # Get GPU name and total memory from PyTorch if available for consistency
+        gpu_name = nvidia_info["name"]
+        total_mb = nvidia_info["memory_total_mb"]
+        total_gb = total_mb / 1024
+        
+        return {
+            "name": gpu_name,
+            "total_gb": total_gb,
+            "total_mb": total_mb,
+            "utilization_gpu": nvidia_info["utilization_gpu"],
+            "utilization_memory": nvidia_info["utilization_memory"],
+            "memory_used_mb": nvidia_info["memory_used_mb"],
+            "memory_usage_percent": nvidia_info["memory_usage_percent"],
+            # For backward compatibility
+            "used_mb": nvidia_info["memory_used_mb"],
+            "usage_percent": nvidia_info["utilization_gpu"]  # Use GPU utilization instead of memory
+        }
+    
+    # Fallback to PyTorch if nvidia-smi unavailable
     if not TORCH_AVAILABLE or not torch.cuda.is_available():
         return None
 
@@ -49,6 +119,11 @@ def get_gpu_info() -> Optional[Dict]:
             "name": torch.cuda.get_device_name(0),
             "total_gb": torch.cuda.get_device_properties(0).total_memory / 1024**3,
             "total_mb": torch.cuda.get_device_properties(0).total_memory / 1024**2,
+            "utilization_gpu": None,  # Not available from PyTorch
+            "utilization_memory": None,
+            "memory_used_mb": torch.cuda.memory_reserved() / 1024**2,
+            "memory_usage_percent": (torch.cuda.memory_reserved() / torch.cuda.get_device_properties(0).total_memory) * 100,
+            # For backward compatibility
             "used_mb": torch.cuda.memory_reserved() / 1024**2,
             "usage_percent": (torch.cuda.memory_reserved() / torch.cuda.get_device_properties(0).total_memory) * 100
         }

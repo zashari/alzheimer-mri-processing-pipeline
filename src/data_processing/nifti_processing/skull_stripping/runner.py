@@ -201,6 +201,12 @@ def run_test(cfg: Dict, formatter: NiftiFormatter) -> int:
             # Update progress bar
             progress.update(task, advance=1)
 
+            # Update GPU status after processing
+            if device == "cuda":
+                updated_gpu_info = get_gpu_info()
+                if updated_gpu_info:
+                    formatter.print_gpu_status_update(updated_gpu_info)
+
             if status == "success":
                 formatter.success(f"Completed {input_file.name} in {process_time:.1f}s")
             else:
@@ -347,6 +353,12 @@ def run_process(cfg: Dict, formatter: NiftiFormatter) -> int:
                 batch_results["errors"]
             )
 
+            # Update GPU status after batch processing
+            if device == "cuda":
+                updated_gpu_info = get_gpu_info()
+                if updated_gpu_info:
+                    formatter.print_gpu_status_update(updated_gpu_info)
+
             # GPU cleanup if enabled
             if enable_gpu_cleanup and device == "cuda" and (i + subjects_per_batch) < len(tasks_to_process):
                 cleanup_result = cleanup_gpu_memory(cleanup_wait_time)
@@ -356,6 +368,10 @@ def run_process(cfg: Dict, formatter: NiftiFormatter) -> int:
                         cleanup_result["after_mb"],
                         cleanup_result["freed_mb"]
                     )
+                    # Update GPU status after cleanup
+                    updated_gpu_info = get_gpu_info()
+                    if updated_gpu_info:
+                        formatter.print_gpu_status_update(updated_gpu_info)
 
     # Calculate average processing time
     avg_time = None

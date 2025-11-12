@@ -73,14 +73,54 @@ class NiftiFormatter:
         if gpu_info:
             self.console.print(f"  [green]🎮[/green] GPU: {gpu_info['name']}")
             self.console.print(f"  [green]💾[/green] VRAM: {gpu_info['total_gb']:.1f} GB")
-            self.console.print(
-                f"  [green]📊[/green] Memory: {gpu_info['used_mb']:.1f} MB / {gpu_info['total_mb']:.1f} MB "
-                f"({gpu_info['usage_percent']:.1f}%)"
-            )
+            
+            # Show GPU utilization if available (preferred), otherwise fall back to memory usage
+            if gpu_info.get('utilization_gpu') is not None:
+                self.console.print(
+                    f"  [green]⚡[/green] GPU Utilization: {gpu_info['utilization_gpu']:.1f}%"
+                )
+                if gpu_info.get('memory_used_mb') is not None:
+                    self.console.print(
+                        f"  [green]📊[/green] Memory: {gpu_info['memory_used_mb']:.1f} MB / "
+                        f"{gpu_info['total_mb']:.1f} MB ({gpu_info.get('memory_usage_percent', 0):.1f}%)"
+                    )
+            else:
+                # Fallback to memory-based display if utilization not available
+                self.console.print(
+                    f"  [green]📊[/green] Memory: {gpu_info.get('used_mb', 0):.1f} MB / "
+                    f"{gpu_info['total_mb']:.1f} MB ({gpu_info.get('usage_percent', 0):.1f}%)"
+                )
         else:
             self.console.print("  [yellow]⚠️[/yellow] GPU not available, using CPU")
 
         self.console.print()
+    
+    def print_gpu_status_update(self, gpu_info: Optional[Dict] = None) -> None:
+        """
+        Print updated GPU status during processing (for periodic updates).
+        
+        Args:
+            gpu_info: Updated GPU information dictionary
+        """
+        if self.json_only or self.quiet:
+            return
+        
+        if not gpu_info:
+            return
+        
+        # Print GPU utilization update on a new line
+        if gpu_info.get('utilization_gpu') is not None:
+            self.console.print(
+                f"  [dim]⚡ GPU Utilization: {gpu_info['utilization_gpu']:.1f}%[/dim]",
+                end=""
+            )
+            if gpu_info.get('memory_used_mb') is not None:
+                self.console.print(
+                    f"  [dim]📊 Memory: {gpu_info['memory_used_mb']:.1f} MB / "
+                    f"{gpu_info['total_mb']:.1f} MB ({gpu_info.get('memory_usage_percent', 0):.1f}%)[/dim]"
+                )
+            else:
+                self.console.print()  # New line if no memory info
 
     def configuration(self, device: str, profile: str, use_tta: bool,
                      batch_size: int, cleanup_enabled: bool) -> None:
