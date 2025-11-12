@@ -5,6 +5,40 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.4.0] - 2025-11-12
+
+### Added
+- **Real-time GPU utilization monitoring** for `skull_stripping` sub-stage:
+  - New `GPUMonitor` class with background thread for continuous GPU status polling
+  - Rich Live display integration combining progress bar and real-time GPU status panel
+  - GPU status panel shows live GPU utilization percentage and memory usage during processing
+  - Automatic GPU monitoring start/stop with context manager support
+  - Thread-safe GPU information retrieval for concurrent access
+
+### Changed
+- **Non-blocking subprocess execution**: Modified `HDBETProcessor.process_file()` to use polling loop instead of blocking `wait()`
+  - Enables real-time GPU monitoring during HD-BET execution
+  - Allows Live display updates while subprocess is running
+  - Maintains timeout handling and error reporting
+- **Enhanced display system**: Added `create_live_display()` method to `NiftiFormatter`
+  - Combines Rich Progress bar with GPU status panel in a single Live display
+  - Updates GPU status every 0.5 seconds (configurable refresh rate)
+  - Gracefully handles GPU unavailability (falls back to progress bar only)
+- **Improved user experience**: Both `test` and `process` modes now show real-time GPU utilization
+  - GPU status updates continuously during file processing
+  - Visual feedback shows actual GPU activity, not just completion status
+  - Better visibility into GPU resource usage during long-running operations
+
+### Technical Details
+- `GPUMonitor` uses `threading.Thread` with daemon flag for background monitoring
+- Polling interval: 0.5 seconds (configurable via `update_interval` parameter)
+- Live display refresh rate: 2.0 updates per second (configurable)
+- GPU monitoring thread automatically stops when processing completes
+- Thread-safe implementation using `threading.Lock` for concurrent access
+- Backward compatible: Falls back gracefully if GPU monitoring unavailable
+
+[1.4.0]: https://github.com/zashari/alzheimer-mri-processing-pipeline/releases/tag/v1.4.0
+
 ## [1.3.0] - 2025-11-12
 
 ### Added

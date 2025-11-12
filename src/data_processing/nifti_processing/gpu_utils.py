@@ -7,6 +7,7 @@ import os
 import time
 import subprocess
 import platform
+import threading
 from typing import Dict, Optional
 
 # Try to import torch (may not be available)
@@ -268,3 +269,85 @@ def setup_gpu_environment(device: str = "cuda") -> None:
         os.environ["PYTORCH_CUDA_ALLOC_CONF"] = "max_split_size_mb:512"
         # Use only first GPU if multiple available
         os.environ["CUDA_VISIBLE_DEVICES"] = "0"
+
+
+class GPUMonitor:
+    """
+    Thread-safe GPU utilization monitor for real-time GPU status updates.
+    
+    Runs in a background thread to periodically poll GPU utilization,
+    allowing real-time display updates during processing.
+    """
+    
+    def __init__(self, update_interval: float = 0.5):
+        """
+        Initialize GPU monitor.
+        
+        Args:
+            update_interval: Seconds between GPU status updates (default: 0.5)
+        """
+        self.update_interval = update_interval
+        self.current_info: Optional[Dict] = None
+        self.running = False
+        self.thread: Optional[threading.Thread] = None
+        self.lock = threading.Lock()
+        self._stop_event = threading.Event()
+    
+    def _monitor_loop(self) -> None:
+        """Background thread loop to continuously monitor GPU."""
+        while not self._stop_event.is_set():
+            try:
+                # Get current GPU info
+                gpu_info = get_gpu_info()
+                
+                # Update thread-safe
+                with self.lock:
+                    self.current_info = gpu_info
+            except Exception:
+                # Silently handle errors (GPU might be unavailable)
+                pass
+            
+            # Wait for next update or stop event
+            self._stop_event.wait(self.update_interval)
+    
+    def start(self) -> None:
+        """Start GPU monitoring in background thread."""
+        if self.running:
+            return
+        
+        self.running = True
+        self._stop_event.clear()
+        self.thread = threading.Thread(target=self._monitor_loop, daemon=True)
+        self.thread.start()
+    
+    def stop(self) -> None:
+        """Stop GPU monitoring thread."""
+        if not self.running:
+            return
+        
+        self._stop_event.set()
+        if self.thread:
+            self.thread.join(timeout=2.0)
+        self.running = False
+    
+    def get_current_info(self) -> Optional[Dict]:
+        """
+        Get current GPU information (thread-safe).
+        
+        Returns:
+            Dictionary with GPU info or None if unavailable
+        """
+        with self.lock:
+            if self.current_info:
+                # Return a copy to prevent external modification
+                return dict(self.current_info)
+            return None
+    
+    def __enter__(self):
+        """Context manager entry."""
+        self.start()
+        return self
+    
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        """Context manager exit."""
+        self.stop()

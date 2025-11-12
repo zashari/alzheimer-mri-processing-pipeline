@@ -12,7 +12,8 @@ from ..gpu_utils import (
     get_gpu_info,
     get_gpu_memory_info,
     cleanup_gpu_memory,
-    setup_gpu_environment
+    setup_gpu_environment,
+    GPUMonitor
 )
 from .visualize import create_batch_visualization
 
@@ -168,11 +169,18 @@ def run_test(cfg: Dict, formatter: NiftiFormatter) -> int:
     if len(sample_files) < num_samples:
         formatter.warning(f"Only found {len(sample_files)} files (requested {num_samples})")
 
-    # Process sample files
-    results = []
-    with formatter.create_progress_bar() as progress:
-        task = progress.add_task("Processing test files", total=len(sample_files))
+    # Initialize GPU monitor if using CUDA
+    gpu_monitor = None
+    if device == "cuda":
+        gpu_monitor = GPUMonitor(update_interval=0.5)
+        gpu_monitor.start()
 
+    # Process sample files with Live display
+    results = []
+    progress = formatter.create_progress_bar()
+    task = progress.add_task("Processing test files", total=len(sample_files))
+    
+    with formatter.create_live_display(progress, gpu_monitor, refresh_per_second=2.0):
         for i, input_file in enumerate(sample_files):
             progress.update(task, description=f"Processing {input_file.name}")
 
@@ -180,7 +188,7 @@ def run_test(cfg: Dict, formatter: NiftiFormatter) -> int:
             output_brain = test_output / f"test_{i}_brain.nii.gz"
             output_mask = test_output / f"test_{i}_mask.nii.gz"
 
-            # Process file
+            # Process file (polling loop allows GPU monitoring to update display)
             start_time = time.time()
             status, error_msg = processor.process_file(
                 input_file, output_brain, output_mask, f"test_{i}"
@@ -201,16 +209,14 @@ def run_test(cfg: Dict, formatter: NiftiFormatter) -> int:
             # Update progress bar
             progress.update(task, advance=1)
 
-            # Update GPU status after processing
-            if device == "cuda":
-                updated_gpu_info = get_gpu_info()
-                if updated_gpu_info:
-                    formatter.print_gpu_status_update(updated_gpu_info)
-
             if status == "success":
                 formatter.success(f"Completed {input_file.name} in {process_time:.1f}s")
             else:
                 formatter.error(f"Failed {input_file.name}: {error_msg}")
+    
+    # Stop GPU monitoring
+    if gpu_monitor:
+        gpu_monitor.stop()
 
     # Show results
     formatter.test_results(results)
@@ -314,15 +320,22 @@ def run_process(cfg: Dict, formatter: NiftiFormatter) -> int:
         formatter.footer(exit_code=0)
         return 0
 
-    # Process in batches
+    # Initialize GPU monitor if using CUDA
+    gpu_monitor = None
+    if device == "cuda":
+        gpu_monitor = GPUMonitor(update_interval=0.5)
+        gpu_monitor.start()
+
+    # Process in batches with Live display
     all_success = []
     all_failed = []
     all_errors = []
     batch_num = 0
 
-    with formatter.create_progress_bar() as progress:
-        task = progress.add_task("Processing files", total=len(tasks_to_process))
-
+    progress = formatter.create_progress_bar()
+    task = progress.add_task("Processing files", total=len(tasks_to_process))
+    
+    with formatter.create_live_display(progress, gpu_monitor, refresh_per_second=2.0):
         for i in range(0, len(tasks_to_process), subjects_per_batch):
             batch_num += 1
             batch = tasks_to_process[i:i + subjects_per_batch]
@@ -333,7 +346,7 @@ def run_process(cfg: Dict, formatter: NiftiFormatter) -> int:
                 for t in batch
             ]
 
-            # Process batch
+            # Process batch (polling loop allows GPU monitoring to update display)
             def progress_callback(current, total, description):
                 progress.update(task, advance=1, description=description)
 
@@ -353,12 +366,6 @@ def run_process(cfg: Dict, formatter: NiftiFormatter) -> int:
                 batch_results["errors"]
             )
 
-            # Update GPU status after batch processing
-            if device == "cuda":
-                updated_gpu_info = get_gpu_info()
-                if updated_gpu_info:
-                    formatter.print_gpu_status_update(updated_gpu_info)
-
             # GPU cleanup if enabled
             if enable_gpu_cleanup and device == "cuda" and (i + subjects_per_batch) < len(tasks_to_process):
                 cleanup_result = cleanup_gpu_memory(cleanup_wait_time)
@@ -368,10 +375,10 @@ def run_process(cfg: Dict, formatter: NiftiFormatter) -> int:
                         cleanup_result["after_mb"],
                         cleanup_result["freed_mb"]
                     )
-                    # Update GPU status after cleanup
-                    updated_gpu_info = get_gpu_info()
-                    if updated_gpu_info:
-                        formatter.print_gpu_status_update(updated_gpu_info)
+    
+    # Stop GPU monitoring
+    if gpu_monitor:
+        gpu_monitor.stop()
 
     # Calculate average processing time
     avg_time = None
