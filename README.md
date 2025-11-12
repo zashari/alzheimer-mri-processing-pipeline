@@ -548,16 +548,17 @@ pip install torch torchvision torchaudio --index-url https://download.pytorch.or
 **Problem:** GPU runs out of memory during processing
 
 **Solution:**
-- Reduce batch size in configuration
-- Reduce number of workers for GPU-intensive stages (especially `nifti_processing`):
+- Reduce parallel processing for GPU-intensive `nifti_processing` substages:
   ```bash
-  # Reduce workers for template registration
-  adp nifti_processing process --substage template_registration \
-    --set nifti_processing.template_registration.max_workers=1
+  # Skull stripping (most GPU-intensive - HD-BET uses GPU)
+  adp nifti_processing process --substage skull_stripping \
+    --set nifti_processing.skull_stripping.max_threads=1 \
+    --set nifti_processing.skull_stripping.subjects_per_batch=2
   
-  # Reduce workers for image enhancement
-  adp image_processing process --substage image_enhancement \
-    --set image_processing.image_enhancement.max_workers=1
+  # Template registration (ANTs can use GPU)
+  adp nifti_processing process --substage template_registration \
+    --set nifti_processing.template_registration.max_workers=1 \
+    --set nifti_processing.template_registration.registration.num_threads=4
   ```
 - Process files in smaller batches
 - Use CPU mode: `--set nifti_processing.skull_stripping.device=cpu`
