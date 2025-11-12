@@ -5,6 +5,30 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.3.0] - 2025-11-12
+
+### Added
+- GPU utilization monitoring for `skull_stripping` sub-stage:
+  - New `get_gpu_utilization()` function to query system-wide GPU utilization via `nvidia-smi`
+  - Real-time GPU utilization display showing actual GPU compute activity (0-100%)
+  - Periodic GPU status updates during processing in both `test` and `process` modes
+  - System-wide GPU metrics that accurately reflect HD-BET's GPU usage across processes
+
+### Changed
+- **GPU status display**: Replaced PyTorch memory-based display with GPU utilization percentage
+  - Now shows actual GPU compute utilization instead of process-specific memory allocation
+  - More accurate representation of GPU usage for subprocess-based tools like HD-BET
+  - Falls back to PyTorch memory tracking if `nvidia-smi` is unavailable (backward compatible)
+- Enhanced GPU monitoring: GPU utilization updates are shown after each file/batch processing
+- Improved GPU status visibility: Both GPU utilization and memory usage are displayed when available
+
+### Technical Details
+- `get_gpu_info()` now prioritizes `nvidia-smi` queries for system-wide GPU metrics
+- Added `print_gpu_status_update()` method to `NiftiFormatter` for periodic GPU status updates
+- GPU utilization accurately reflects HD-BET's GPU activity even though it runs as a separate subprocess
+
+[1.3.0]: https://github.com/zashari/alzheimer-mri-processing-pipeline/releases/tag/v1.3.0
+
 ## [1.2.0] - 2025-11-12
 
 ### Added
