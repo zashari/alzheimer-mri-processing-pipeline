@@ -134,23 +134,8 @@ class HDBETProcessor:
                     )
 
                 try:
-                    # Use polling loop instead of blocking wait to allow GPU monitoring
-                    start_time = time.time()
-                    returncode = None
-                    
-                    while returncode is None:
-                        returncode = process.poll()
-                        
-                        if returncode is not None:
-                            break
-                        
-                        # Check timeout
-                        elapsed = time.time() - start_time
-                        if elapsed >= self.timeout_sec:
-                            raise subprocess.TimeoutExpired(cmd, self.timeout_sec)
-                        
-                        # Small sleep to allow other operations (GPU monitoring, display updates)
-                        time.sleep(0.1)
+                    # Wait for completion with timeout
+                    returncode = process.wait(timeout=self.timeout_sec)
 
                     if returncode != 0:
                         # Read error output for debugging

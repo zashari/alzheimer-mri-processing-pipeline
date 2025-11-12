@@ -8,12 +8,10 @@ from datetime import datetime
 from pathlib import Path
 from typing import Dict, List, Optional, Tuple
 
-from rich.console import Console, Group
+from rich.console import Console
 from rich.table import Table
 from rich.panel import Panel
 from rich.progress import Progress, SpinnerColumn, TextColumn, BarColumn, TimeRemainingColumn
-from rich.live import Live
-from rich.text import Text
 
 
 class NiftiFormatter:
@@ -75,54 +73,11 @@ class NiftiFormatter:
         if gpu_info:
             self.console.print(f"  [green]🎮[/green] GPU: {gpu_info['name']}")
             self.console.print(f"  [green]💾[/green] VRAM: {gpu_info['total_gb']:.1f} GB")
-            
-            # Show GPU utilization if available (preferred), otherwise fall back to memory usage
-            if gpu_info.get('utilization_gpu') is not None:
-                self.console.print(
-                    f"  [green]⚡[/green] GPU Utilization: {gpu_info['utilization_gpu']:.1f}%"
-                )
-                if gpu_info.get('memory_used_mb') is not None:
-                    self.console.print(
-                        f"  [green]📊[/green] Memory: {gpu_info['memory_used_mb']:.1f} MB / "
-                        f"{gpu_info['total_mb']:.1f} MB ({gpu_info.get('memory_usage_percent', 0):.1f}%)"
-                    )
-            else:
-                # Fallback to memory-based display if utilization not available
-                self.console.print(
-                    f"  [green]📊[/green] Memory: {gpu_info.get('used_mb', 0):.1f} MB / "
-                    f"{gpu_info['total_mb']:.1f} MB ({gpu_info.get('usage_percent', 0):.1f}%)"
-                )
         else:
             self.console.print("  [yellow]⚠️[/yellow] GPU not available, using CPU")
 
         self.console.print()
     
-    def print_gpu_status_update(self, gpu_info: Optional[Dict] = None) -> None:
-        """
-        Print updated GPU status during processing (for periodic updates).
-        
-        Args:
-            gpu_info: Updated GPU information dictionary
-        """
-        if self.json_only or self.quiet:
-            return
-        
-        if not gpu_info:
-            return
-        
-        # Print GPU utilization update on a new line
-        if gpu_info.get('utilization_gpu') is not None:
-            self.console.print(
-                f"  [dim]⚡ GPU Utilization: {gpu_info['utilization_gpu']:.1f}%[/dim]",
-                end=""
-            )
-            if gpu_info.get('memory_used_mb') is not None:
-                self.console.print(
-                    f"  [dim]📊 Memory: {gpu_info['memory_used_mb']:.1f} MB / "
-                    f"{gpu_info['total_mb']:.1f} MB ({gpu_info.get('memory_usage_percent', 0):.1f}%)[/dim]"
-                )
-            else:
-                self.console.print()  # New line if no memory info
 
     def configuration(self, device: str, profile: str, use_tta: bool,
                      batch_size: int, cleanup_enabled: bool) -> None:
@@ -190,79 +145,6 @@ class NiftiFormatter:
             TextColumn("[progress.percentage]{task.percentage:>3.0f}%"),
             TimeRemainingColumn(),
             console=self.console
-        )
-    
-    def create_live_display(
-        self, 
-        progress: Progress, 
-        gpu_monitor=None,
-        refresh_per_second: float = 2.0
-    ) -> Live:
-        """
-        Create a Live display that combines Progress bar and GPU status.
-        
-        Args:
-            progress: Rich Progress bar instance
-            gpu_monitor: Optional GPUMonitor instance for real-time GPU updates
-            refresh_per_second: Refresh rate for Live display (default: 2.0)
-        
-        Returns:
-            Rich Live context manager
-        """
-        def render_gpu_status() -> Optional[Panel]:
-            """Render GPU status panel if monitor is available."""
-            if not gpu_monitor:
-                return None
-            
-            gpu_info = gpu_monitor.get_current_info()
-            if not gpu_info:
-                return None
-            
-            # Build GPU status text
-            lines = []
-            if gpu_info.get('utilization_gpu') is not None:
-                util_gpu = gpu_info['utilization_gpu']
-                util_color = "green" if util_gpu > 50 else "yellow" if util_gpu > 10 else "dim"
-                lines.append(
-                    Text(f"⚡ GPU Utilization: ", style="blue") + 
-                    Text(f"{util_gpu:.1f}%", style=util_color)
-                )
-            
-            if gpu_info.get('memory_used_mb') is not None:
-                mem_used = gpu_info['memory_used_mb']
-                mem_total = gpu_info['total_mb']
-                mem_percent = gpu_info.get('memory_usage_percent', 0)
-                lines.append(
-                    Text(f"📊 Memory: ", style="blue") +
-                    Text(f"{mem_used:.0f} MB / {mem_total:.0f} MB ", style="cyan") +
-                    Text(f"({mem_percent:.1f}%)", style="dim")
-                )
-            
-            if not lines:
-                return None
-            
-            return Panel(
-                Group(*lines),
-                title="[blue]GPU Status[/blue]",
-                border_style="blue",
-                padding=(0, 1)
-            )
-        
-        def render() -> Group:
-            """Render function for Live display."""
-            renderables = [progress]
-            
-            gpu_panel = render_gpu_status()
-            if gpu_panel:
-                renderables.append(gpu_panel)
-            
-            return Group(*renderables)
-        
-        return Live(
-            render(),
-            refresh_per_second=refresh_per_second,
-            console=self.console,
-            screen=False
         )
 
     def gpu_cleanup(self, before_mb: float, after_mb: float, freed_mb: float) -> None:

@@ -5,6 +5,39 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.4.1] - 2025-11-12
+
+### Fixed
+- **Stability fix**: Removed real-time GPU utilization monitoring that was causing process crashes on Windows
+  - Fixed silent process termination due to Rich Live display compatibility issues with Windows console
+  - Resolved Unicode encoding errors with emoji rendering in GPU status panel
+  - Eliminated threading-related instability from background GPU monitoring
+
+### Removed
+- **Real-time GPU monitoring**: Removed `GPUMonitor` class and Rich Live display integration
+  - Removed misleading GPU utilization percentage display (showed 0% even when GPU was active)
+  - Removed GPU memory usage percentage display (not meaningful for subprocess-based tools like HD-BET)
+  - Simplified GPU status display to show only essential information: GPU name and total VRAM
+
+### Changed
+- **Simplified GPU status display**: GPU status now shows only device name and VRAM capacity
+  - More stable and reliable across all platforms
+  - No longer displays misleading utilization percentages
+  - Cleaner, simpler output focused on essential GPU information
+- **Reverted subprocess execution**: Changed `HDBETProcessor.process_file()` back to blocking `wait()` instead of polling loop
+  - More stable and reliable subprocess handling
+  - Eliminates potential race conditions from polling loop
+  - Maintains proper timeout handling and error reporting
+
+### Technical Details
+- Removed `create_live_display()` method from `NiftiFormatter`
+- Removed `print_gpu_status_update()` method from `NiftiFormatter`
+- Removed `GPUMonitor` import and usage from `skull_stripping/runner.py`
+- Simplified `hd_bet_status()` to display only GPU name and VRAM
+- Reverted `processor.process_file()` to use `process.wait(timeout=...)` instead of polling loop
+
+[1.4.1]: https://github.com/zashari/alzheimer-mri-processing-pipeline/releases/tag/v1.4.1
+
 ## [1.4.0] - 2025-11-12
 
 ### Added
