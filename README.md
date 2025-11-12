@@ -539,8 +539,10 @@ pip install torch torchvision torchaudio --index-url https://download.pytorch.or
 2. Download hippocampus ROI to `support_files/templates/hippocampal-roi/hippho50.nii.gz`
 3. Verify template paths in `configs/stages/nifti_processing.yaml` under `template_registration` section, or override via CLI:
    ```bash
+   # Override both template paths (use absolute paths or paths relative to project root)
    adp nifti_processing process --substage template_registration \
-     --set nifti_processing.template_registration.mni_template_path=/path/to/template.nii.gz
+     --set nifti_processing.template_registration.mni_template_path=support_files/templates/mni-brain/MNI152_T1_1mm_brain.nii.gz \
+     --set nifti_processing.template_registration.hippocampus_roi_path=support_files/templates/hippocampal-roi/hippho50.nii.gz
    ```
 
 #### 4. Out of Memory Errors
@@ -552,10 +554,9 @@ pip install torch torchvision torchaudio --index-url https://download.pytorch.or
   ```bash
   # Skull stripping (most GPU-intensive - HD-BET uses GPU)
   adp nifti_processing process --substage skull_stripping \
-    --set nifti_processing.skull_stripping.max_threads=1 \
     --set nifti_processing.skull_stripping.subjects_per_batch=2
   
-  # Template registration (ANTs can use GPU)
+  # Template registration (CPU-intensive, memory-heavy - ANTs uses CPU threading)
   adp nifti_processing process --substage template_registration \
     --set nifti_processing.template_registration.max_workers=1 \
     --set nifti_processing.template_registration.registration.num_threads=4
