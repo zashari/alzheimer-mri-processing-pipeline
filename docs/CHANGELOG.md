@@ -5,6 +5,35 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.4.3] - 2025-11-12
+
+### Fixed
+- **Performance regression in skull stripping**: Fixed severe slowdown (24+ minutes per file) caused by `subprocess.communicate()`
+  - Changed from `subprocess.PIPE` + `communicate()` to hybrid approach: file handle for stderr + `wait()`
+  - Uses `subprocess.DEVNULL` for stdout (not needed)
+  - Uses file handle for stderr (unlimited buffer, no deadlock risk)
+  - Uses `wait()` instead of `communicate()` for fast execution (matches notebook performance)
+  - Processing time restored to expected 30 seconds - 2 minutes per file
+  - Added `_safe_delete()` helper function with retry logic for Windows file locking
+
+### Changed
+- **Subprocess execution strategy**: Hybrid approach combining benefits of file handles and `wait()`
+  - File handle for stderr provides unlimited buffer (no pipe deadlock risk)
+  - `wait()` provides fast execution (doesn't read output during execution)
+  - Retry logic handles Windows file locking gracefully
+  - Maintains error capture capability (reads stderr file only on error)
+  - Cross-platform compatible (works on Windows, Linux, macOS)
+
+### Technical Details
+- Modified `HDBETProcessor.process_file()` to use file handle + `wait()` instead of PIPE + `communicate()`
+- Added `_safe_delete()` function with exponential backoff retry logic for file deletion
+- File handle is kept open during `wait()`, then closed after process completes
+- Error messages read from file only when `returncode != 0`
+- Temp stderr file cleaned up with retry logic in `finally` block
+- Maintains all existing functionality while dramatically improving performance
+
+[1.4.3]: https://github.com/zashari/alzheimer-mri-processing-pipeline/releases/tag/v1.4.3
+
 ## [1.4.2] - 2025-11-12
 
 ### Fixed

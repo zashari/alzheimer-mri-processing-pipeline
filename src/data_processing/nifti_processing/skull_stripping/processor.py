@@ -15,6 +15,26 @@ from typing import Dict, List, Optional, Tuple
 from ..gpu_utils import kill_zombie_processes
 
 
+def _safe_delete(file_path: Path, max_retries: int = 3, delay: float = 0.1) -> None:
+    """
+    Safely delete file with retry logic for Windows file locking issues.
+    
+    Args:
+        file_path: Path to file to delete
+        max_retries: Maximum number of retry attempts
+        delay: Initial delay between retries (exponential backoff)
+    """
+    for attempt in range(max_retries):
+        try:
+            file_path.unlink(missing_ok=True)
+            break
+        except PermissionError:
+            if attempt < max_retries - 1:
+                # Exponential backoff: delay * (attempt + 1)
+                time.sleep(delay * (attempt + 1))
+            # Last attempt failed, silently continue (file is in temp dir anyway)
+
+
 class HDBETProcessor:
     """Handles HD-BET skull stripping operations."""
 
@@ -84,6 +104,9 @@ class HDBETProcessor:
 
         task_id = task_id or f"{time.time()}"
 
+        # Create temporary file for stderr (unlimited buffer, no deadlock risk)
+        temp_stderr = self.temp_dir / f"hd_bet_{task_id}.err"
+
         try:
             # HD-BET requires output to end with .nii.gz
             # Use a temporary name that HD-BET expects
@@ -104,63 +127,59 @@ class HDBETProcessor:
             # Save mask file
             cmd.append("--save_bet_mask")
 
-            # Run HD-BET with PIPE to avoid file locking issues on Windows
-            # Use PIPE instead of file handles for cross-platform compatibility
-            if os.name != "nt":  # Unix-like systems
-                process = subprocess.Popen(
-                    cmd,
-                    stdout=subprocess.PIPE,
-                    stderr=subprocess.PIPE,
-                    text=True,
-                    close_fds=True,
-                    preexec_fn=os.setsid
-                )
-            else:  # Windows
-                process = subprocess.Popen(
-                    cmd,
-                    stdout=subprocess.PIPE,
-                    stderr=subprocess.PIPE,
-                    text=True,
-                    close_fds=True
-                )
+            # Hybrid approach: File handle for stderr + wait() for fast execution
+            # - stdout: DEVNULL (don't need it)
+            # - stderr: File handle (unlimited buffer, no deadlock risk)
+            # - Use wait() instead of communicate() for fast execution
+            with open(temp_stderr, "w") as ferr:
+                if os.name != "nt":  # Unix-like systems
+                    process = subprocess.Popen(
+                        cmd,
+                        stdout=subprocess.DEVNULL,
+                        stderr=ferr,
+                        close_fds=True,
+                        preexec_fn=os.setsid
+                    )
+                else:  # Windows
+                    process = subprocess.Popen(
+                        cmd,
+                        stdout=subprocess.DEVNULL,
+                        stderr=ferr,
+                        close_fds=True
+                    )
 
-            try:
-                # Wait for completion and read output from pipes
-                # communicate() handles both waiting and reading output
-                stdout_data, stderr_data = process.communicate(timeout=self.timeout_sec)
+                try:
+                    # Fast execution: wait() instead of communicate()
+                    # wait() just waits for process exit, doesn't read output
+                    returncode = process.wait(timeout=self.timeout_sec)
 
-                if process.returncode != 0:
-                    # Extract error message from stderr (first 500 chars)
-                    error_msg = (stderr_data[:500] if stderr_data else "Unknown error")
-                    return "error", f"HD-BET failed (code {process.returncode}): {error_msg}"
-
-            except subprocess.TimeoutExpired:
-                # Kill the process on timeout
-                if os.name != "nt":
-                    try:
-                        os.killpg(os.getpgid(process.pid), signal.SIGTERM)
+                except subprocess.TimeoutExpired:
+                    # Kill the process on timeout
+                    if os.name != "nt":
+                        try:
+                            os.killpg(os.getpgid(process.pid), signal.SIGTERM)
+                            time.sleep(2)
+                            os.killpg(os.getpgid(process.pid), signal.SIGKILL)
+                        except:
+                            process.kill()
+                    else:
+                        process.terminate()
                         time.sleep(2)
-                        os.killpg(os.getpgid(process.pid), signal.SIGKILL)
-                    except:
                         process.kill()
-                else:
-                    process.terminate()
-                    time.sleep(2)
-                    process.kill()
 
-                # Clean up pipes after killing process
-                if process.stdout:
-                    process.stdout.close()
-                if process.stderr:
-                    process.stderr.close()
+                    return "timeout", f"Timeout after {self.timeout_sec}s"
 
-                return "timeout", f"Timeout after {self.timeout_sec}s"
-            finally:
-                # Ensure pipes are closed
-                if process.stdout:
-                    process.stdout.close()
-                if process.stderr:
-                    process.stderr.close()
+            # File handle closed here (after wait completes)
+            # Subprocess should have released it by now
+
+            if returncode != 0:
+                # Read error from file (safe now, handle is closed)
+                try:
+                    with open(temp_stderr, "r") as ferr:
+                        error_msg = ferr.read()[:500]  # First 500 chars
+                except Exception:
+                    error_msg = "Could not read error file"
+                return "error", f"HD-BET failed (code {returncode}): {error_msg}"
 
             # HD-BET creates files with specific naming
             hd_bet_brain = temp_output
@@ -188,8 +207,10 @@ class HDBETProcessor:
             return "error", str(e)
 
         finally:
+            # Clean up temp files with retry logic (handle Windows file locking)
+            _safe_delete(temp_stderr)
+            
             # Clean up any remaining temp output files (HD-BET output files)
-            # Note: stdout/stderr temp files are no longer needed since we use PIPE
             for temp_file in output_brain.parent.glob(f"temp_{task_id}*"):
                 temp_file.unlink(missing_ok=True)
 
