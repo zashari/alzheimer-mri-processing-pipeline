@@ -5,6 +5,33 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.4.4] - 2025-11-13
+
+### Fixed
+- **Windows timeout issue in skull stripping**: Fixed subprocess hanging indefinitely on Windows (600s timeout)
+  - Changed from `subprocess.DEVNULL` for stdout to file handle (proper Windows handle inheritance)
+  - Uses file handles for both stdout and stderr (matches working pattern from v1.4.1)
+  - Maintains fast execution with `wait()` instead of `communicate()`
+  - Proper handle inheritance ensures subprocess completes correctly on Windows
+  - Processing completes successfully within expected time (30 seconds - 2 minutes per file)
+
+### Changed
+- **Subprocess execution strategy**: Use file handles for both stdout and stderr
+  - File handles ensure proper handle inheritance on Windows (avoids timeout issues)
+  - Both stdout and stderr use file handles (unlimited buffer, no deadlock risk)
+  - Maintains `wait()` for fast execution (doesn't read output during execution)
+  - Retry logic handles Windows file locking gracefully
+  - Cross-platform compatible (works on Windows, Linux, macOS)
+
+### Technical Details
+- Modified `HDBETProcessor.process_file()` to use file handles for both stdout and stderr
+- File handles are kept open during `wait()`, then closed after process completes
+- Error messages read from stderr file only when `returncode != 0`
+- Both temp stdout and stderr files cleaned up with retry logic in `finally` block
+- Maintains all existing functionality while fixing Windows timeout issue
+
+[1.4.4]: https://github.com/zashari/alzheimer-mri-processing-pipeline/releases/tag/v1.4.4
+
 ## [1.4.3] - 2025-11-12
 
 ### Fixed

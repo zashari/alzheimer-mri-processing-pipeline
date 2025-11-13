@@ -104,7 +104,8 @@ class HDBETProcessor:
 
         task_id = task_id or f"{time.time()}"
 
-        # Create temporary file for stderr (unlimited buffer, no deadlock risk)
+        # Create temporary files for stdout and stderr (unlimited buffer, no deadlock risk)
+        temp_stdout = self.temp_dir / f"hd_bet_{task_id}.out"
         temp_stderr = self.temp_dir / f"hd_bet_{task_id}.err"
 
         try:
@@ -127,15 +128,16 @@ class HDBETProcessor:
             # Save mask file
             cmd.append("--save_bet_mask")
 
-            # Hybrid approach: File handle for stderr + wait() for fast execution
-            # - stdout: DEVNULL (don't need it)
+            # Hybrid approach: File handles for both stdout and stderr + wait() for fast execution
+            # - stdout: File handle (unlimited buffer, no deadlock risk, proper Windows inheritance)
             # - stderr: File handle (unlimited buffer, no deadlock risk)
             # - Use wait() instead of communicate() for fast execution
-            with open(temp_stderr, "w") as ferr:
+            # - File handles ensure proper handle inheritance on Windows (avoids timeout issues)
+            with open(temp_stdout, "w") as fout, open(temp_stderr, "w") as ferr:
                 if os.name != "nt":  # Unix-like systems
                     process = subprocess.Popen(
                         cmd,
-                        stdout=subprocess.DEVNULL,
+                        stdout=fout,
                         stderr=ferr,
                         close_fds=True,
                         preexec_fn=os.setsid
@@ -143,7 +145,7 @@ class HDBETProcessor:
                 else:  # Windows
                     process = subprocess.Popen(
                         cmd,
-                        stdout=subprocess.DEVNULL,
+                        stdout=fout,
                         stderr=ferr,
                         close_fds=True
                     )
@@ -169,8 +171,8 @@ class HDBETProcessor:
 
                     return "timeout", f"Timeout after {self.timeout_sec}s"
 
-            # File handle closed here (after wait completes)
-            # Subprocess should have released it by now
+            # File handles closed here (after wait completes)
+            # Subprocess should have released them by now
 
             if returncode != 0:
                 # Read error from file (safe now, handle is closed)
@@ -208,6 +210,7 @@ class HDBETProcessor:
 
         finally:
             # Clean up temp files with retry logic (handle Windows file locking)
+            _safe_delete(temp_stdout)
             _safe_delete(temp_stderr)
             
             # Clean up any remaining temp output files (HD-BET output files)
