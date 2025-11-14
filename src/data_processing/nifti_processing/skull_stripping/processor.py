@@ -146,8 +146,8 @@ class HDBETProcessor:
                     process = subprocess.Popen(
                         cmd,
                         stdout=fout,
-                        stderr=ferr,
-                        close_fds=True
+                        stderr=ferr
+                        # Note: close_fds=True removed for Windows compatibility with file handles
                     )
 
                 try:

@@ -5,6 +5,21 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.4.5] - 2025-11-14
+
+### Fixed
+- **Critical Windows subprocess hanging issue in skull stripping**: Removed `close_fds=True` parameter on Windows
+  - Root cause: `close_fds=True` is incompatible with file handles on Windows, causing indefinite hangs
+  - Solution: Remove `close_fds=True` from Windows subprocess calls while keeping it for Unix systems
+  - This fixes the 600-second timeout issue that prevented HD-BET from running on Windows
+  - Maintains cross-platform compatibility (Unix systems still use `close_fds=True` for security)
+
+### Technical Details
+- Modified `HDBETProcessor.process_file()` in `processor.py` line 150
+- Windows now uses `subprocess.Popen()` without `close_fds` parameter when using file handles
+- Unix/Linux/macOS continue to use `close_fds=True` for proper file descriptor management
+- Aligns implementation with the working Jupyter notebook reference code
+
 ## [1.4.4] - 2025-11-13
 
 ### Fixed
@@ -36,7 +51,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 - **Performance regression in skull stripping**: Fixed severe slowdown (24+ minutes per file) caused by `subprocess.communicate()`
-  - Changed from `subprocess.PIPE` + `communicate()` to hybrid approach: file handle for stderr + `wait()`
+cls  - Changed from `subprocess.PIPE` + `communicate()` to hybrid approach: file handle for stderr + `wait()`
   - Uses `subprocess.DEVNULL` for stdout (not needed)
   - Uses file handle for stderr (unlimited buffer, no deadlock risk)
   - Uses `wait()` instead of `communicate()` for fast execution (matches notebook performance)
