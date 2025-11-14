@@ -285,9 +285,23 @@ class HDBETProcessor:
             # Add arguments
             cmd.extend([
                 "-i", str(input_path.absolute()),
-                "-o", str(temp_output.absolute()),
-                "-device", self.device
+                "-o", str(temp_output.absolute())
             ])
+
+            # Handle device parameter - fork expects int (0,1,2...) or 'cpu'
+            if self.device == "cuda":
+                cmd.extend(["-device", "0"])  # Default to GPU 0 for cuda
+            elif self.device == "cpu":
+                cmd.extend(["-device", "cpu"])
+            elif self.device.isdigit():
+                cmd.extend(["-device", self.device])  # Already a number
+            else:
+                # Assume it's a GPU index like "cuda:0" or "cuda:1"
+                if ":" in self.device:
+                    gpu_id = self.device.split(":")[-1]
+                    cmd.extend(["-device", gpu_id])
+                else:
+                    cmd.extend(["-device", "0"])  # Default to GPU 0
 
             # Add version-specific arguments
             if self._hd_bet_fork_version:
