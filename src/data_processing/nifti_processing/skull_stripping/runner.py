@@ -135,8 +135,14 @@ def run_test(cfg: Dict, formatter: NiftiFormatter) -> int:
 
     formatter.header("test", "skull_stripping", device=device, samples=num_samples)
 
-    # Initialize processor
-    processor = HDBETProcessor(device=device, use_tta=use_tta, timeout_sec=timeout_sec)
+    # Initialize processor with test mode and verbose flags
+    processor = HDBETProcessor(
+        device=device,
+        use_tta=use_tta,
+        timeout_sec=timeout_sec,
+        verbose=formatter.verbose,
+        is_test_mode=True
+    )
 
     # Check HD-BET availability
     hd_bet_available = processor.check_availability()
@@ -269,8 +275,14 @@ def run_process(cfg: Dict, formatter: NiftiFormatter) -> int:
     if device == "cuda":
         setup_gpu_environment(device)
 
-    # Initialize processor
-    processor = HDBETProcessor(device=device, use_tta=use_tta, timeout_sec=timeout_sec)
+    # Initialize processor with verbose flag
+    processor = HDBETProcessor(
+        device=device,
+        use_tta=use_tta,
+        timeout_sec=timeout_sec,
+        verbose=formatter.verbose,
+        is_test_mode=False
+    )
 
     # Check HD-BET availability
     hd_bet_available = processor.check_availability()

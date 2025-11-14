@@ -5,6 +5,39 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.4.9] - 2025-11-14
+
+### Fixed
+- **HD-BET timeout issues**: Comprehensive fixes for skull stripping timeout problems
+  - Increased timeout to 1200s for test mode (first run may need to download models)
+  - Added verbose output capture for better debugging of HD-BET issues
+  - Improved error reporting by reading stdout/stderr from temp files
+  - Force CPU mode on Windows during test to avoid GPU TDR (Timeout Detection & Recovery) issues
+
+### Changed
+- **Enhanced path handling**: Use absolute paths for all HD-BET commands
+  - Explicitly set working directory for subprocess execution
+  - Ensures HD-BET can find input files regardless of where it changes directory
+- **Better debugging capabilities**:
+  - Added verbose flag to HDBETProcessor for detailed logging
+  - Log HD-BET command before execution in verbose mode
+  - Show partial output when timeout occurs to help diagnose issues
+  - Check for model download indicators in timeout messages
+
+### Added
+- **Model download detection**: Check if HD-BET models directory exists
+  - Warn user if models may need to be downloaded on first run
+  - Provide helpful message when timeout may be due to model downloading
+- **Test mode optimization**:
+  - Separate handling for test vs process mode
+  - Auto-switch to CPU on Windows for test mode to avoid GPU issues
+
+### Technical Details
+- Modified `processor.py` to accept verbose and is_test_mode parameters
+- Enhanced subprocess error handling to capture and report output before failures
+- Added explicit Path.absolute() calls to avoid relative path issues
+- Set subprocess cwd parameter to ensure consistent working directory
+
 ## [1.4.8] - 2025-11-14
 
 ### Fixed

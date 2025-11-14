@@ -23,11 +23,17 @@ class HDBETProcessor:
         device: str = "cuda",
         use_tta: bool = False,
         timeout_sec: int = 600,
-        temp_dir: Optional[Path] = None
+        temp_dir: Optional[Path] = None,
+        verbose: bool = False,
+        is_test_mode: bool = False
     ):
         self.device = device
         self.use_tta = use_tta
-        self.timeout_sec = timeout_sec
+        # Increase timeout for test mode (first run may need to load models)
+        self.timeout_sec = 1200 if is_test_mode else timeout_sec
+        self.verbose = verbose
+        self.is_test_mode = is_test_mode
+
         # Setup temp directory for subprocess output files
         if temp_dir:
             self.temp_dir = temp_dir
@@ -35,6 +41,17 @@ class HDBETProcessor:
             self.temp_dir = Path(tempfile.gettempdir()) / "hd_bet_output"
         self.temp_dir.mkdir(parents=True, exist_ok=True)
         self.dir_lock = threading.Lock()  # Thread-safe directory creation
+
+        # Check if HD-BET models are downloaded
+        hd_bet_home = Path.home() / ".hd-bet"
+        if not hd_bet_home.exists() and self.verbose:
+            print("Note: HD-BET models may need to be downloaded on first run (this can take time)")
+
+        # Force CPU on Windows if in test mode to avoid TDR issues
+        if os.name == 'nt' and self.device == 'cuda' and is_test_mode:
+            if self.verbose:
+                print("Note: Using CPU mode for test on Windows to avoid GPU timeout issues")
+            self.device = 'cpu'
 
     def check_availability(self) -> bool:
         """Check if HD-BET is installed and accessible."""
@@ -101,11 +118,11 @@ class HDBETProcessor:
             # Use a temporary name that HD-BET expects
             temp_output = output_brain.parent / f"temp_{task_id}.nii.gz"
 
-            # Build HD-BET command
+            # Build HD-BET command with absolute paths
             cmd = [
                 "hd-bet",
-                "-i", str(input_path),
-                "-o", str(temp_output),
+                "-i", str(input_path.absolute()),
+                "-o", str(temp_output.absolute()),
                 "-device", self.device
             ]
 
@@ -116,12 +133,17 @@ class HDBETProcessor:
             # Save mask file
             cmd.append("--save_bet_mask")
 
+            # Log command if verbose
+            if self.verbose:
+                print(f"Running HD-BET command: {' '.join(cmd)}")
+
             # Run HD-BET with file-based output handling to avoid pipe buffer issues
             with open(temp_stdout, "w") as fout, open(temp_stderr, "w") as ferr:
                 process = subprocess.Popen(
                     cmd,
                     stdout=fout,
                     stderr=ferr,
+                    cwd=str(Path.cwd()),  # Explicitly set working directory
                     # Prevent process from hanging on to resources
                     close_fds=(os.name != 'nt'),  # close_fds=True not supported on Windows
                     # For Unix: create new process group for better control
@@ -133,9 +155,18 @@ class HDBETProcessor:
                     returncode = process.wait(timeout=self.timeout_sec)
 
                     if returncode != 0:
-                        # Read error output for debugging
-                        with open(temp_stderr, "r") as ferr:
-                            error_msg = ferr.read()[:500]  # First 500 chars
+                        # Read full output for debugging
+                        with open(temp_stdout, "r") as f:
+                            stdout_content = f.read()
+                        with open(temp_stderr, "r") as f:
+                            stderr_content = f.read()
+
+                        # Log verbose output if requested
+                        if self.verbose:
+                            print(f"HD-BET stdout: {stdout_content[:1000]}")
+                            print(f"HD-BET stderr: {stderr_content[:1000]}")
+
+                        error_msg = stderr_content[:500] if stderr_content else stdout_content[:500]
                         return "error", f"HD-BET failed (code {returncode}): {error_msg}"
 
                 except subprocess.TimeoutExpired:
@@ -156,6 +187,23 @@ class HDBETProcessor:
                             process.kill()
                         except:
                             pass
+
+                    # Read any output that was produced before timeout
+                    try:
+                        with open(temp_stdout, "r") as f:
+                            stdout_content = f.read()
+                        with open(temp_stderr, "r") as f:
+                            stderr_content = f.read()
+
+                        if self.verbose:
+                            print(f"HD-BET timed out. Stdout: {stdout_content[:500]}")
+                            print(f"HD-BET timed out. Stderr: {stderr_content[:500]}")
+
+                        # Check if models need to be downloaded
+                        if "downloading" in stderr_content.lower() or "downloading" in stdout_content.lower():
+                            return "timeout", f"Timeout after {self.timeout_sec}s (possibly downloading models - try again)"
+                    except:
+                        pass
 
                     return "timeout", f"Timeout after {self.timeout_sec}s"
 
