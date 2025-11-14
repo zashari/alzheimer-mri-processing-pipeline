@@ -12,7 +12,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Increased timeout to 1200s for test mode (first run may need to download models)
   - Added verbose output capture for better debugging of HD-BET issues
   - Improved error reporting by reading stdout/stderr from temp files
-  - Force CPU mode on Windows during test to avoid GPU TDR (Timeout Detection & Recovery) issues
 
 ### Changed
 - **Enhanced path handling**: Use absolute paths for all HD-BET commands
@@ -29,8 +28,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Warn user if models may need to be downloaded on first run
   - Provide helpful message when timeout may be due to model downloading
 - **Test mode optimization**:
-  - Separate handling for test vs process mode
-  - Auto-switch to CPU on Windows for test mode to avoid GPU issues
+  - Separate handling for test vs process mode with longer timeout
 
 ### Technical Details
 - Modified `processor.py` to accept verbose and is_test_mode parameters

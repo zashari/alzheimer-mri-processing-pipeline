@@ -47,12 +47,6 @@ class HDBETProcessor:
         if not hd_bet_home.exists() and self.verbose:
             print("Note: HD-BET models may need to be downloaded on first run (this can take time)")
 
-        # Force CPU on Windows if in test mode to avoid TDR issues
-        if os.name == 'nt' and self.device == 'cuda' and is_test_mode:
-            if self.verbose:
-                print("Note: Using CPU mode for test on Windows to avoid GPU timeout issues")
-            self.device = 'cpu'
-
     def check_availability(self) -> bool:
         """Check if HD-BET is installed and accessible."""
         try:
