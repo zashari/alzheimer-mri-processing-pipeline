@@ -4,22 +4,11 @@ from __future__ import annotations
 
 from typing import Dict
 
-print("[DEBUG NIFTI_RUNNER] Starting imports")
-print("[DEBUG NIFTI_RUNNER] Importing skull_stripping")
 from . import skull_stripping
-print("[DEBUG NIFTI_RUNNER] skull_stripping imported")
-print("[DEBUG NIFTI_RUNNER] Importing template_registration")
 from . import template_registration
-print("[DEBUG NIFTI_RUNNER] template_registration imported")
-print("[DEBUG NIFTI_RUNNER] Importing labelling")
 from . import labelling
-print("[DEBUG NIFTI_RUNNER] labelling imported")
-print("[DEBUG NIFTI_RUNNER] Importing twoD_conversion")
 from . import twoD_conversion
-print("[DEBUG NIFTI_RUNNER] twoD_conversion imported")
-print("[DEBUG NIFTI_RUNNER] Importing formatter")
 from .formatter import NiftiFormatter
-print("[DEBUG NIFTI_RUNNER] All imports complete")
 
 
 def run(action: str, cfg: Dict) -> int:

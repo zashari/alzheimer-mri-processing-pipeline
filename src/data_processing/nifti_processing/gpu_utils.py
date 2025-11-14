@@ -1,7 +1,5 @@
 """GPU memory management utilities for NIfTI processing."""
 
-print("[DEBUG GPU_UTILS] Starting gpu_utils import")
-
 from __future__ import annotations
 
 import gc
@@ -12,24 +10,40 @@ import platform
 import threading
 from typing import Dict, Optional
 
-print("[DEBUG GPU_UTILS] Standard imports done, attempting torch import")
+# Lazy loading for torch to avoid hanging on import
+_torch_module = None
+_torch_import_attempted = False
+_torch_available = None
 
-# Try to import torch (may not be available)
-try:
-    print("[DEBUG GPU_UTILS] Importing torch...")
-    import torch
-    print("[DEBUG GPU_UTILS] Torch imported successfully")
-    TORCH_AVAILABLE = True
-except ImportError as e:
-    print(f"[DEBUG GPU_UTILS] Torch import failed: {e}")
-    TORCH_AVAILABLE = False
+def _get_torch():
+    """
+    Lazy load torch module to avoid hanging on import.
 
-print("[DEBUG GPU_UTILS] gpu_utils module loaded")
+    Returns:
+        torch module or None if not available
+    """
+    global _torch_module, _torch_import_attempted, _torch_available
 
+    if not _torch_import_attempted:
+        _torch_import_attempted = True
+        try:
+            import torch
+            _torch_module = torch
+            _torch_available = True
+        except ImportError:
+            _torch_available = False
+
+    return _torch_module
+
+def is_torch_available() -> bool:
+    """Check if torch is available (triggers lazy load if needed)."""
+    _get_torch()
+    return _torch_available
 
 def get_gpu_memory_info() -> Optional[Dict]:
     """Get current GPU memory usage information."""
-    if not TORCH_AVAILABLE or not torch.cuda.is_available():
+    torch = _get_torch()
+    if not torch or not torch.cuda.is_available():
         return None
 
     try:
@@ -52,34 +66,34 @@ def get_gpu_memory_info() -> Optional[Dict]:
 def get_gpu_utilization() -> Optional[Dict]:
     """
     Get GPU utilization from nvidia-smi (system-wide, works across processes).
-    
+
     Returns:
         Dictionary with GPU utilization info or None if unavailable
     """
     try:
         result = subprocess.run(
-            ["nvidia-smi", "--query-gpu=utilization.gpu,utilization.memory,memory.used,memory.total,name", 
+            ["nvidia-smi", "--query-gpu=utilization.gpu,utilization.memory,memory.used,memory.total,name",
              "--format=csv,noheader,nounits"],
             capture_output=True,
             text=True,
             timeout=5
         )
-        
+
         if result.returncode != 0 or not result.stdout.strip():
             return None
-        
+
         # Parse output: "util_gpu, util_mem, mem_used, mem_total, name"
         # Split by ", " but handle GPU name which might contain commas
         parts = result.stdout.strip().split(", ", 4)  # Split into max 5 parts
         if len(parts) < 5:
             return None
-        
+
         util_gpu = float(parts[0])
         util_mem = float(parts[1])
         mem_used = float(parts[2])
         mem_total = float(parts[3])
         name = parts[4].strip()  # GPU name (may contain commas, but we've already split)
-        
+
         return {
             "utilization_gpu": util_gpu,
             "utilization_memory": util_mem,
@@ -95,18 +109,18 @@ def get_gpu_utilization() -> Optional[Dict]:
 def get_gpu_info() -> Optional[Dict]:
     """
     Get GPU device information with utilization from nvidia-smi.
-    
+
     Falls back to PyTorch if nvidia-smi is unavailable, but prioritizes
     system-wide GPU utilization over PyTorch-specific memory tracking.
     """
     # Try nvidia-smi first for system-wide GPU utilization
     nvidia_info = get_gpu_utilization()
     if nvidia_info:
-        # Get GPU name and total memory from PyTorch if available for consistency
+        # Get GPU name and total memory from nvidia-smi
         gpu_name = nvidia_info["name"]
         total_mb = nvidia_info["memory_total_mb"]
         total_gb = total_mb / 1024
-        
+
         return {
             "name": gpu_name,
             "total_gb": total_gb,
@@ -119,9 +133,10 @@ def get_gpu_info() -> Optional[Dict]:
             "used_mb": nvidia_info["memory_used_mb"],
             "usage_percent": nvidia_info["utilization_gpu"]  # Use GPU utilization instead of memory
         }
-    
-    # Fallback to PyTorch if nvidia-smi unavailable
-    if not TORCH_AVAILABLE or not torch.cuda.is_available():
+
+    # Fallback to PyTorch if nvidia-smi unavailable (triggers lazy load)
+    torch = _get_torch()
+    if not torch or not torch.cuda.is_available():
         return None
 
     try:
@@ -158,7 +173,8 @@ def cleanup_gpu_memory(wait_time: int = 5) -> Dict:
         "success": False
     }
 
-    if not TORCH_AVAILABLE or not torch.cuda.is_available():
+    torch = _get_torch()
+    if not torch or not torch.cuda.is_available():
         return result
 
     try:
@@ -271,7 +287,9 @@ def setup_gpu_environment(device: str = "cuda") -> None:
     Args:
         device: Device type (cuda, cpu, mps)
     """
-    if device == "cuda" and TORCH_AVAILABLE:
+    if device == "cuda":
+        # Only set environment variables if we're using CUDA
+        # Don't trigger torch import here
         # Force synchronous CUDA operations for better error tracking
         os.environ["CUDA_LAUNCH_BLOCKING"] = "1"
         # Optimize memory allocation
@@ -283,15 +301,15 @@ def setup_gpu_environment(device: str = "cuda") -> None:
 class GPUMonitor:
     """
     Thread-safe GPU utilization monitor for real-time GPU status updates.
-    
+
     Runs in a background thread to periodically poll GPU utilization,
     allowing real-time display updates during processing.
     """
-    
+
     def __init__(self, update_interval: float = 0.5):
         """
         Initialize GPU monitor.
-        
+
         Args:
             update_interval: Seconds between GPU status updates (default: 0.5)
         """
@@ -301,48 +319,48 @@ class GPUMonitor:
         self.thread: Optional[threading.Thread] = None
         self.lock = threading.Lock()
         self._stop_event = threading.Event()
-    
+
     def _monitor_loop(self) -> None:
         """Background thread loop to continuously monitor GPU."""
         while not self._stop_event.is_set():
             try:
                 # Get current GPU info
                 gpu_info = get_gpu_info()
-                
+
                 # Update thread-safe
                 with self.lock:
                     self.current_info = gpu_info
             except Exception:
                 # Silently handle errors (GPU might be unavailable)
                 pass
-            
+
             # Wait for next update or stop event
             self._stop_event.wait(self.update_interval)
-    
+
     def start(self) -> None:
         """Start GPU monitoring in background thread."""
         if self.running:
             return
-        
+
         self.running = True
         self._stop_event.clear()
         self.thread = threading.Thread(target=self._monitor_loop, daemon=True)
         self.thread.start()
-    
+
     def stop(self) -> None:
         """Stop GPU monitoring thread."""
         if not self.running:
             return
-        
+
         self._stop_event.set()
         if self.thread:
             self.thread.join(timeout=2.0)
         self.running = False
-    
+
     def get_current_info(self) -> Optional[Dict]:
         """
         Get current GPU information (thread-safe).
-        
+
         Returns:
             Dictionary with GPU info or None if unavailable
         """
@@ -351,12 +369,12 @@ class GPUMonitor:
                 # Return a copy to prevent external modification
                 return dict(self.current_info)
             return None
-    
+
     def __enter__(self):
         """Context manager entry."""
         self.start()
         return self
-    
+
     def __exit__(self, exc_type, exc_val, exc_tb):
         """Context manager exit."""
         self.stop()

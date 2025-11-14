@@ -5,6 +5,31 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.4.7] - 2025-11-14
+
+### Changed
+- **Implemented lazy loading for PyTorch in GPU utilities**: Deferred torch import until first use
+  - PyTorch was hanging on import due to CUDA initialization issues on some Windows systems
+  - Added `_get_torch()` function to lazily import torch only when GPU functions are called
+  - Maintains GPU as default device for skull stripping while avoiding import-time hangs
+  - All GPU utility functions updated to use lazy loading pattern
+
+### Fixed
+- **Resolved Python syntax error with `from __future__` imports**: Fixed import order in processor.py
+  - Moved debug statements after `from __future__` declaration as required by Python
+  - This was preventing the nifti_processing stage from registering correctly
+
+### Removed
+- Removed all debug print statements added during troubleshooting
+  - Cleaned up debug output from gpu_utils.py, processor.py, cli.py, stages/__init__.py, and runner files
+  - Code is now production-ready without verbose debug logging
+
+### Technical Details
+- Modified `gpu_utils.py` to use global lazy loading variables (`_torch_module`, `_torch_import_attempted`, `_torch_available`)
+- All GPU functions now call `_get_torch()` instead of directly accessing torch module
+- PyTorch import is deferred until first GPU operation, preventing startup hangs
+- GPU remains the default device for HD-BET processing
+
 ## [1.4.6] - 2025-11-14
 
 ### Changed

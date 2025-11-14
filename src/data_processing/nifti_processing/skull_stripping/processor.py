@@ -1,10 +1,7 @@
 """HD-BET skull stripping processor."""
 
-print("[DEBUG PROCESSOR] Starting processor.py import")
-
 from __future__ import annotations
 
-print("[DEBUG PROCESSOR] Importing standard libraries")
 import shutil
 import subprocess
 import threading
@@ -12,9 +9,7 @@ import time
 from pathlib import Path
 from typing import Dict, List, Optional, Tuple
 
-print("[DEBUG PROCESSOR] Importing gpu_utils")
 from ..gpu_utils import kill_zombie_processes
-print("[DEBUG PROCESSOR] processor.py imports complete")
 
 
 class HDBETProcessor:
@@ -35,10 +30,8 @@ class HDBETProcessor:
 
     def check_availability(self) -> bool:
         """Check if HD-BET is installed and accessible."""
-        print("[DEBUG] Starting HD-BET availability check...")
         try:
             # Use PIPE to avoid file locking issues
-            print("[DEBUG] Running: hd-bet --help")
             result = subprocess.run(
                 ["hd-bet", "--help"],
                 stdout=subprocess.PIPE,
@@ -46,19 +39,15 @@ class HDBETProcessor:
                 text=True,
                 timeout=60,
             )
-            print(f"[DEBUG] HD-BET check completed with return code: {result.returncode}")
 
             return result.returncode == 0
 
         except FileNotFoundError:
-            print("[DEBUG] HD-BET not found in PATH")
             return False
         except subprocess.TimeoutExpired:
             # HD-BET command timed out but might still work
-            print("[DEBUG] HD-BET check timed out after 60s")
             return True
-        except Exception as e:
-            print(f"[DEBUG] HD-BET check failed with error: {e}")
+        except Exception:
             return False
 
     def process_file(

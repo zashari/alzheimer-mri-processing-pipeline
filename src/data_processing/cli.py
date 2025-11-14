@@ -1,31 +1,15 @@
 from __future__ import annotations
 
-print("[DEBUG CLI] Starting CLI module import")
-
 import argparse
 import sys
 from pathlib import Path
 from typing import Dict
 
-print("[DEBUG CLI] About to import config.loader")
 from .config.loader import load_config
-print("[DEBUG CLI] config.loader imported")
-
-print("[DEBUG CLI] About to import config.schema")
 from .config.schema import AppConfig, build_app_config
-print("[DEBUG CLI] config.schema imported")
-
-print("[DEBUG CLI] About to import logging_setup")
 from .logging_setup import setup_logging
-print("[DEBUG CLI] logging_setup imported")
-
-print("[DEBUG CLI] About to import stages")
 from .stages import available_stages, get_stage
-print("[DEBUG CLI] stages imported")
-
-print("[DEBUG CLI] About to import utils.randomness")
 from .utils.randomness import set_seed
-print("[DEBUG CLI] All imports complete")
 
 
 def _root() -> Path:

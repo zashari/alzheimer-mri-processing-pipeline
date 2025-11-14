@@ -116,8 +116,6 @@ def run_test(cfg: Dict, formatter: NiftiFormatter) -> int:
     """
     Run test mode - process only a few sample files to verify setup.
     """
-    print("[DEBUG] Starting run_test function")
-
     # Get configuration
     skull_cfg = cfg.get("nifti_processing", {}).get("skull_stripping", {})
     test_cfg = skull_cfg.get("test", {})
@@ -128,8 +126,6 @@ def run_test(cfg: Dict, formatter: NiftiFormatter) -> int:
     num_samples = test_cfg.get("num_samples", 2)
     save_viz = test_cfg.get("save_visualization", True)
 
-    print(f"[DEBUG] Config: device={device}, timeout={timeout_sec}s")
-
     # Setup paths
     output_root = Path(cfg.get("paths", {}).get("output_root", "outputs"))
     input_dir = output_root / skull_cfg.get("input_dir", "1_splitted_sequential")
@@ -137,19 +133,13 @@ def run_test(cfg: Dict, formatter: NiftiFormatter) -> int:
     test_output = output_dir / "test"
     test_output.mkdir(parents=True, exist_ok=True)
 
-    print("[DEBUG] About to show header")
     formatter.header("test", "skull_stripping", device=device, samples=num_samples)
-    print("[DEBUG] Header shown")
 
     # Initialize processor
-    print("[DEBUG] Creating HDBETProcessor")
     processor = HDBETProcessor(device=device, use_tta=use_tta, timeout_sec=timeout_sec)
-    print("[DEBUG] HDBETProcessor created")
 
     # Check HD-BET availability
-    print("[DEBUG] Checking HD-BET availability")
     hd_bet_available = processor.check_availability()
-    print(f"[DEBUG] HD-BET availability check done: {hd_bet_available}")
     gpu_info = get_gpu_info() if device == "cuda" else None
     formatter.hd_bet_status(hd_bet_available, gpu_info)
 
