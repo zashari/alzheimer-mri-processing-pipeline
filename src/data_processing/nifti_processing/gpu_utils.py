@@ -10,57 +10,42 @@ import platform
 import threading
 from typing import Dict, Optional
 
-# Lazy loading for torch to avoid hanging on import
+# DO NOT import torch at module level - it hangs on some systems
+# We'll use nvidia-smi for GPU info instead, which is more reliable
+TORCH_AVAILABLE = False
 _torch_module = None
-_torch_import_attempted = False
-_torch_available = None
+_torch_checked = False
 
-def _get_torch():
-    """
-    Lazy load torch module to avoid hanging on import.
 
-    Returns:
-        torch module or None if not available
-    """
-    global _torch_module, _torch_import_attempted, _torch_available
+def _try_import_torch_with_timeout(timeout=2):
+    """Try to import torch with a timeout to prevent hanging."""
+    global _torch_module, TORCH_AVAILABLE, _torch_checked
 
-    if not _torch_import_attempted:
-        _torch_import_attempted = True
-        try:
-            import torch
-            _torch_module = torch
-            _torch_available = True
-        except ImportError:
-            _torch_available = False
+    if _torch_checked:
+        return _torch_module
 
-    return _torch_module
+    _torch_checked = True
 
-def is_torch_available() -> bool:
-    """Check if torch is available (triggers lazy load if needed)."""
-    _get_torch()
-    return _torch_available
+    # For now, we'll skip torch import entirely and rely on nvidia-smi
+    # This avoids the hanging issue completely
+    TORCH_AVAILABLE = False
+    _torch_module = None
+    return None
+
 
 def get_gpu_memory_info() -> Optional[Dict]:
     """Get current GPU memory usage information."""
-    torch = _get_torch()
-    if not torch or not torch.cuda.is_available():
-        return None
-
-    try:
-        # Get memory info in MB
-        allocated = torch.cuda.memory_allocated() / 1024**2
-        reserved = torch.cuda.memory_reserved() / 1024**2
-        total = torch.cuda.get_device_properties(0).total_memory / 1024**2
-
+    # Use nvidia-smi instead of torch for reliability
+    gpu_info = get_gpu_utilization()
+    if gpu_info:
         return {
-            "allocated_mb": allocated,
-            "reserved_mb": reserved,
-            "total_mb": total,
-            "free_mb": total - reserved,
-            "usage_percent": (reserved / total) * 100,
+            "allocated_mb": gpu_info["memory_used_mb"],
+            "reserved_mb": gpu_info["memory_used_mb"],  # Approximate
+            "total_mb": gpu_info["memory_total_mb"],
+            "free_mb": gpu_info["memory_total_mb"] - gpu_info["memory_used_mb"],
+            "usage_percent": gpu_info["memory_usage_percent"],
         }
-    except Exception:
-        return None
+    return None
 
 
 def get_gpu_utilization() -> Optional[Dict]:
@@ -113,7 +98,7 @@ def get_gpu_info() -> Optional[Dict]:
     Falls back to PyTorch if nvidia-smi is unavailable, but prioritizes
     system-wide GPU utilization over PyTorch-specific memory tracking.
     """
-    # Try nvidia-smi first for system-wide GPU utilization
+    # Always use nvidia-smi - it's more reliable and doesn't require torch
     nvidia_info = get_gpu_utilization()
     if nvidia_info:
         # Get GPU name and total memory from nvidia-smi
@@ -134,26 +119,8 @@ def get_gpu_info() -> Optional[Dict]:
             "usage_percent": nvidia_info["utilization_gpu"]  # Use GPU utilization instead of memory
         }
 
-    # Fallback to PyTorch if nvidia-smi unavailable (triggers lazy load)
-    torch = _get_torch()
-    if not torch or not torch.cuda.is_available():
-        return None
-
-    try:
-        return {
-            "name": torch.cuda.get_device_name(0),
-            "total_gb": torch.cuda.get_device_properties(0).total_memory / 1024**3,
-            "total_mb": torch.cuda.get_device_properties(0).total_memory / 1024**2,
-            "utilization_gpu": None,  # Not available from PyTorch
-            "utilization_memory": None,
-            "memory_used_mb": torch.cuda.memory_reserved() / 1024**2,
-            "memory_usage_percent": (torch.cuda.memory_reserved() / torch.cuda.get_device_properties(0).total_memory) * 100,
-            # For backward compatibility
-            "used_mb": torch.cuda.memory_reserved() / 1024**2,
-            "usage_percent": (torch.cuda.memory_reserved() / torch.cuda.get_device_properties(0).total_memory) * 100
-        }
-    except Exception:
-        return None
+    # If nvidia-smi not available, return None (don't try torch)
+    return None
 
 
 def cleanup_gpu_memory(wait_time: int = 5) -> Dict:
@@ -173,19 +140,13 @@ def cleanup_gpu_memory(wait_time: int = 5) -> Dict:
         "success": False
     }
 
-    torch = _get_torch()
-    if not torch or not torch.cuda.is_available():
-        return result
-
+    # Since we're not using torch, we can't do torch-specific cleanup
+    # Just do general Python cleanup
     try:
         # Get memory before cleanup
         before = get_gpu_memory_info()
         if before:
             result["before_mb"] = before["reserved_mb"]
-
-        # Clear PyTorch cache
-        torch.cuda.empty_cache()
-        torch.cuda.synchronize()
 
         # Force garbage collection
         gc.collect()
@@ -228,19 +189,21 @@ def kill_zombie_processes(process_name: str = "hd-bet") -> int:
                 try:
                     cmdline = proc.info.get("cmdline", [])
                     if cmdline and any(process_name in str(arg).lower() for arg in cmdline):
-                        proc.terminate()
+                        proc.terminate()  # Try graceful termination first
                         try:
-                            proc.wait(timeout=3)
+                            proc.wait(timeout=3)  # Wait up to 3 seconds
                         except psutil.TimeoutExpired:
-                            proc.kill()
+                            proc.kill()  # Force kill if still running
                         killed_count += 1
                 except (psutil.NoSuchProcess, psutil.AccessDenied, psutil.ZombieProcess):
                     pass
 
+            if killed_count > 0:
+                print(f"   🔫 Killed {killed_count} hanging HD-BET processes")
             return killed_count
 
         except ImportError:
-            # psutil not installed, try platform-specific methods
+            # psutil not installed, try other methods
             pass
 
         # Platform-specific fallback
@@ -289,7 +252,6 @@ def setup_gpu_environment(device: str = "cuda") -> None:
     """
     if device == "cuda":
         # Only set environment variables if we're using CUDA
-        # Don't trigger torch import here
         # Force synchronous CUDA operations for better error tracking
         os.environ["CUDA_LAUNCH_BLOCKING"] = "1"
         # Optimize memory allocation
