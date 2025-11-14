@@ -2,8 +2,11 @@
 
 from __future__ import annotations
 
+import os
 import shutil
+import signal
 import subprocess
+import tempfile
 import threading
 import time
 from pathlib import Path
@@ -25,7 +28,12 @@ class HDBETProcessor:
         self.device = device
         self.use_tta = use_tta
         self.timeout_sec = timeout_sec
-        # temp_dir kept for compatibility but not used with subprocess.run()
+        # Setup temp directory for subprocess output files
+        if temp_dir:
+            self.temp_dir = temp_dir
+        else:
+            self.temp_dir = Path(tempfile.gettempdir()) / "hd_bet_output"
+        self.temp_dir.mkdir(parents=True, exist_ok=True)
         self.dir_lock = threading.Lock()  # Thread-safe directory creation
 
     def check_availability(self) -> bool:
@@ -58,7 +66,11 @@ class HDBETProcessor:
         task_id: Optional[str] = None
     ) -> Tuple[str, Optional[str]]:
         """
-        Process a single NIfTI file with HD-BET using subprocess.run().
+        Process a single NIfTI file with HD-BET using file-based output redirection.
+
+        This implementation uses subprocess.Popen with file handles to avoid
+        pipe buffer overflow issues that can cause hanging when HD-BET produces
+        large amounts of output (model loading, progress bars, etc.).
 
         Args:
             input_path: Path to input NIfTI file
@@ -80,6 +92,10 @@ class HDBETProcessor:
 
         task_id = task_id or f"{time.time()}"
 
+        # Create temporary files for subprocess output
+        temp_stdout = self.temp_dir / f"hd_bet_{task_id}.out"
+        temp_stderr = self.temp_dir / f"hd_bet_{task_id}.err"
+
         try:
             # HD-BET requires output to end with .nii.gz
             # Use a temporary name that HD-BET expects
@@ -100,30 +116,48 @@ class HDBETProcessor:
             # Save mask file
             cmd.append("--save_bet_mask")
 
-            # Use subprocess.run() with capture_output for simplicity and reliability
-            # This matches the working pattern from the notebook test
-            try:
-                result = subprocess.run(
+            # Run HD-BET with file-based output handling to avoid pipe buffer issues
+            with open(temp_stdout, "w") as fout, open(temp_stderr, "w") as ferr:
+                process = subprocess.Popen(
                     cmd,
-                    capture_output=True,
-                    text=True,
-                    timeout=self.timeout_sec,
-                    # close_fds is automatically handled by subprocess.run()
-                    # On Windows with Python 3.7+, it defaults correctly
+                    stdout=fout,
+                    stderr=ferr,
+                    # Prevent process from hanging on to resources
+                    close_fds=(os.name != 'nt'),  # close_fds=True not supported on Windows
+                    # For Unix: create new process group for better control
+                    preexec_fn=os.setsid if os.name != "nt" else None,
                 )
 
-                if result.returncode != 0:
-                    # Extract error message from stderr
-                    error_msg = result.stderr[:500] if result.stderr else "Unknown error"
-                    return "error", f"HD-BET failed (code {result.returncode}): {error_msg}"
+                try:
+                    # Wait for completion with timeout
+                    returncode = process.wait(timeout=self.timeout_sec)
 
-            except subprocess.TimeoutExpired as e:
-                # The process timed out
-                return "timeout", f"Timeout after {self.timeout_sec}s"
+                    if returncode != 0:
+                        # Read error output for debugging
+                        with open(temp_stderr, "r") as ferr:
+                            error_msg = ferr.read()[:500]  # First 500 chars
+                        return "error", f"HD-BET failed (code {returncode}): {error_msg}"
 
-            except Exception as e:
-                # Other subprocess errors
-                return "error", f"Subprocess error: {str(e)}"
+                except subprocess.TimeoutExpired:
+                    # Kill the process on timeout
+                    if os.name != "nt":
+                        # Unix: Kill entire process group
+                        try:
+                            os.killpg(os.getpgid(process.pid), signal.SIGTERM)
+                            time.sleep(2)  # Give it time to terminate
+                            os.killpg(os.getpgid(process.pid), signal.SIGKILL)
+                        except ProcessLookupError:
+                            pass  # Process already dead
+                    else:
+                        # Windows: Use terminate/kill
+                        process.terminate()
+                        time.sleep(2)
+                        try:
+                            process.kill()
+                        except:
+                            pass
+
+                    return "timeout", f"Timeout after {self.timeout_sec}s"
 
             # HD-BET creates files with specific naming
             hd_bet_brain = temp_output
@@ -151,7 +185,14 @@ class HDBETProcessor:
             return "error", str(e)
 
         finally:
-            # Clean up any remaining temp output files (HD-BET output files)
+            # Clean up temporary files
+            for temp_file in [temp_stdout, temp_stderr]:
+                try:
+                    temp_file.unlink(missing_ok=True)
+                except:
+                    pass
+
+            # Clean up any remaining HD-BET temp output files
             for temp_file in output_brain.parent.glob(f"temp_{task_id}*"):
                 try:
                     temp_file.unlink()
@@ -200,8 +241,24 @@ class HDBETProcessor:
         return results
 
     def cleanup(self) -> None:
-        """Kill any zombie HD-BET processes."""
+        """Kill any zombie HD-BET processes and clean up temp directory."""
         # Kill any hanging HD-BET processes
         killed = kill_zombie_processes("hd-bet")
         if killed > 0:
             print(f"Killed {killed} hanging HD-BET processes")
+
+        # Clean up temp directory
+        try:
+            if self.temp_dir.exists():
+                for temp_file in self.temp_dir.glob("hd_bet_*.out"):
+                    try:
+                        temp_file.unlink(missing_ok=True)
+                    except:
+                        pass
+                for temp_file in self.temp_dir.glob("hd_bet_*.err"):
+                    try:
+                        temp_file.unlink(missing_ok=True)
+                    except:
+                        pass
+        except Exception:
+            pass  # Silently fail cleanup

@@ -5,6 +5,29 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.4.8] - 2025-11-14
+
+### Fixed
+- **Critical: Resolved subprocess deadlock in skull stripping**: Replaced pipe-based output with file-based redirection
+  - Fixed hanging issue when HD-BET produces large amounts of output (model loading, progress bars, CUDA init)
+  - Switched from `subprocess.run()` with `capture_output=True` to `subprocess.Popen()` with file handles
+  - Prevents pipe buffer overflow that causes deadlock when output exceeds OS buffer limits (~64KB Windows, ~1MB Linux)
+  - Matches the proven working implementation from the original Jupyter notebook
+
+### Changed
+- **Improved subprocess handling for HD-BET**: Enhanced cross-platform compatibility
+  - Uses temporary files for stdout/stderr to avoid pipe buffer limitations
+  - Proper process group management on Unix systems for reliable timeout handling
+  - Windows-compatible process termination without close_fds issues
+  - Added cleanup of temporary output files in temp directory
+
+### Technical Details
+- Modified `processor.py` to use file-based output redirection pattern
+- Created temp directory at `$TEMP/hd_bet_output/` for subprocess output files
+- Process writes to `hd_bet_{task_id}.out` and `hd_bet_{task_id}.err` files
+- Files are cleaned up after processing or in cleanup() method
+- Timeout handling now properly kills process groups on Unix, terminate/kill on Windows
+
 ## [1.4.7] - 2025-11-14
 
 ### Changed
