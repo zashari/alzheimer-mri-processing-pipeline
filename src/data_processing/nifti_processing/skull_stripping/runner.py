@@ -123,6 +123,7 @@ def run_test(cfg: Dict, formatter: NiftiFormatter) -> int:
     device = skull_cfg.get("device", "cuda")
     use_tta = skull_cfg.get("use_tta", False)
     timeout_sec = skull_cfg.get("timeout_sec", 600)
+    execution_method = skull_cfg.get("execution_method", "auto")
     num_samples = test_cfg.get("num_samples", 2)
     save_viz = test_cfg.get("save_visualization", True)
 
@@ -141,7 +142,8 @@ def run_test(cfg: Dict, formatter: NiftiFormatter) -> int:
         use_tta=use_tta,
         timeout_sec=timeout_sec,
         verbose=formatter.verbose,
-        is_test_mode=True
+        is_test_mode=True,
+        execution_method=execution_method
     )
 
     # Check HD-BET availability
@@ -258,6 +260,7 @@ def run_process(cfg: Dict, formatter: NiftiFormatter) -> int:
     device = skull_cfg.get("device", "cuda")
     use_tta = skull_cfg.get("use_tta", False)
     timeout_sec = skull_cfg.get("timeout_sec", 600)
+    execution_method = skull_cfg.get("execution_method", "auto")
     subjects_per_batch = skull_cfg.get("subjects_per_batch", 5)
     enable_gpu_cleanup = skull_cfg.get("enable_gpu_cleanup", True)
     cleanup_wait_time = skull_cfg.get("cleanup_wait_time", 5)
@@ -281,7 +284,8 @@ def run_process(cfg: Dict, formatter: NiftiFormatter) -> int:
         use_tta=use_tta,
         timeout_sec=timeout_sec,
         verbose=formatter.verbose,
-        is_test_mode=False
+        is_test_mode=False,
+        execution_method=execution_method
     )
 
     # Check HD-BET availability

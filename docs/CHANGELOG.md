@@ -5,6 +5,51 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.5.0] - 2025-11-14
+
+### Added
+- **Adaptive HD-BET Execution System**: Intelligent platform-aware execution backend selection
+  - Automatically detects and selects the best execution method based on OS and availability
+  - Three execution backends: subprocess_native, subprocess_module, and api_direct
+  - Cross-platform compatibility with optimized methods for Windows, Linux, and macOS
+  - Fallback mechanisms ensure HD-BET always runs if installed
+- **Python Module Execution Support**: New execution method using `python -m HD_BET`
+  - Resolves Windows command resolution issues where native `hd-bet` command fails
+  - Based on insights from HD-BET Windows PR #46 (unmerged upstream fixes)
+- **Direct API Import Fallback**: Alternative execution via direct Python import
+  - Uses `HD_BET.run.run_hd_bet()` when subprocess methods fail
+  - Implements threading with timeout for API calls
+  - Provides last-resort option for challenging environments
+- **Configurable Execution Method**: New configuration option `execution_method`
+  - Options: "auto" (default), "subprocess", "module", "api"
+  - Allows manual override for specific environment needs
+  - Documented in nifti_processing.yaml configuration
+
+### Changed
+- **Enhanced HDBETProcessor Architecture**: Refactored for multi-backend support
+  - Added `_setup_execution_backend()` for intelligent backend detection
+  - Split processing into `_process_with_subprocess()` and `_process_with_api()`
+  - Maintains backward compatibility while adding new capabilities
+- **Improved Platform Detection**: Smart OS-specific optimizations
+  - Unix systems prefer native command for best performance
+  - Windows systems prefer Python module execution for reliability
+  - Automatic fallback chain ensures maximum compatibility
+
+### Fixed
+- **Windows HD-BET Execution**: Resolved command not found errors on Windows
+  - HD-BET command-line entry point now works properly on Windows
+  - No longer requires manual batch file creation or workarounds
+- **Cross-Platform Compatibility**: Unified execution across all operating systems
+  - Single codebase works on Windows, Linux, and macOS
+  - Automatic adaptation to platform-specific requirements
+
+### Technical Details
+- Added platform detection using `platform.system()`
+- Implemented test methods: `_test_native_command()`, `_test_module_execution()`, `_test_api_import()`
+- Backend selection prioritizes: Unix→native, Windows→module, fallback→API
+- Maintains subprocess isolation for GPU/memory safety
+- Preserves all existing functionality while adding adaptive capabilities
+
 ## [1.4.9] - 2025-11-14
 
 ### Fixed

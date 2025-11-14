@@ -3,9 +3,11 @@
 from __future__ import annotations
 
 import os
+import platform
 import shutil
 import signal
 import subprocess
+import sys
 import tempfile
 import threading
 import time
@@ -16,7 +18,7 @@ from ..gpu_utils import kill_zombie_processes
 
 
 class HDBETProcessor:
-    """Handles HD-BET skull stripping operations."""
+    """Handles HD-BET skull stripping operations with adaptive execution backend."""
 
     def __init__(
         self,
@@ -25,7 +27,8 @@ class HDBETProcessor:
         timeout_sec: int = 600,
         temp_dir: Optional[Path] = None,
         verbose: bool = False,
-        is_test_mode: bool = False
+        is_test_mode: bool = False,
+        execution_method: str = "auto"  # New: "auto", "subprocess", "module", "api"
     ):
         self.device = device
         self.use_tta = use_tta
@@ -33,6 +36,8 @@ class HDBETProcessor:
         self.timeout_sec = 1200 if is_test_mode else timeout_sec
         self.verbose = verbose
         self.is_test_mode = is_test_mode
+        self.execution_method = execution_method
+        self._execution_backend = None  # Will be determined in _setup_execution_backend()
 
         # Setup temp directory for subprocess output files
         if temp_dir:
@@ -69,6 +74,85 @@ class HDBETProcessor:
         except Exception:
             return False
 
+    def _setup_execution_backend(self) -> str:
+        """
+        Determine the best execution method for HD-BET based on platform and availability.
+
+        Returns:
+            str: The backend to use: "subprocess_native", "subprocess_module", or "api_direct"
+        """
+        # If user specified a method, try to use it
+        if self.execution_method != "auto":
+            if self.execution_method == "api":
+                return "api_direct"
+            elif self.execution_method == "module":
+                return "subprocess_module"
+            else:
+                return "subprocess_native"
+
+        # Auto-detection logic
+        system = platform.system()
+
+        # Strategy 1: Check if native hd-bet command works (best for Unix)
+        if system in ["Linux", "Darwin"]:  # Unix-like systems
+            if self._test_native_command():
+                if self.verbose:
+                    print("✓ Using native hd-bet command (Unix)")
+                return "subprocess_native"
+
+        # Strategy 2: For Windows or if native fails, try Python module execution
+        if self._test_module_execution():
+            if self.verbose:
+                print(f"✓ Using Python module execution (-m HD_BET) on {system}")
+            return "subprocess_module"
+
+        # Strategy 3: Check if we can import HD_BET directly (fallback)
+        if self._test_api_import():
+            if self.verbose:
+                print("✓ Using direct API import (fallback)")
+            return "api_direct"
+
+        # Strategy 4: Last resort - try native anyway
+        if self.verbose:
+            print("⚠ No optimal method found, attempting native command")
+        return "subprocess_native"
+
+    def _test_native_command(self) -> bool:
+        """Test if native hd-bet command is available."""
+        try:
+            result = subprocess.run(
+                ["hd-bet", "--help"],
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                timeout=5
+            )
+            return result.returncode == 0
+        except (FileNotFoundError, subprocess.TimeoutExpired):
+            return False
+        except Exception:
+            return False
+
+    def _test_module_execution(self) -> bool:
+        """Test if HD_BET can be run as a Python module."""
+        try:
+            result = subprocess.run(
+                [sys.executable, "-m", "HD_BET", "--help"],
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                timeout=5
+            )
+            return result.returncode == 0
+        except (subprocess.TimeoutExpired, Exception):
+            return False
+
+    def _test_api_import(self) -> bool:
+        """Test if HD_BET can be imported directly."""
+        try:
+            import HD_BET.run
+            return True
+        except ImportError:
+            return False
+
     def process_file(
         self,
         input_path: Path,
@@ -77,11 +161,11 @@ class HDBETProcessor:
         task_id: Optional[str] = None
     ) -> Tuple[str, Optional[str]]:
         """
-        Process a single NIfTI file with HD-BET using file-based output redirection.
+        Process a single NIfTI file using the optimal execution method.
 
-        This implementation uses subprocess.Popen with file handles to avoid
-        pipe buffer overflow issues that can cause hanging when HD-BET produces
-        large amounts of output (model loading, progress bars, etc.).
+        This implementation automatically selects the best execution backend
+        based on platform and availability (subprocess_native, subprocess_module,
+        or api_direct).
 
         Args:
             input_path: Path to input NIfTI file
@@ -93,10 +177,30 @@ class HDBETProcessor:
             Tuple of (status, error_message)
             Status can be: "success", "skip", "timeout", or error message
         """
+        # Setup execution backend on first run
+        if self._execution_backend is None:
+            self._execution_backend = self._setup_execution_backend()
+
         # Check if output already exists
         if output_brain.exists():
             return "skip", None
 
+        # Route to appropriate execution method
+        if self._execution_backend == "api_direct":
+            return self._process_with_api(input_path, output_brain, output_mask, task_id)
+        else:
+            return self._process_with_subprocess(input_path, output_brain, output_mask, task_id)
+
+    def _process_with_subprocess(
+        self,
+        input_path: Path,
+        output_brain: Path,
+        output_mask: Path,
+        task_id: Optional[str] = None
+    ) -> Tuple[str, Optional[str]]:
+        """
+        Process using subprocess (either native command or Python module).
+        """
         # Ensure output directory exists (thread-safe)
         with self.dir_lock:
             output_brain.parent.mkdir(parents=True, exist_ok=True)
@@ -112,13 +216,18 @@ class HDBETProcessor:
             # Use a temporary name that HD-BET expects
             temp_output = output_brain.parent / f"temp_{task_id}.nii.gz"
 
-            # Build HD-BET command with absolute paths
-            cmd = [
-                "hd-bet",
+            # Build command based on backend
+            if self._execution_backend == "subprocess_module":
+                cmd = [sys.executable, "-m", "HD_BET"]
+            else:
+                cmd = ["hd-bet"]
+
+            # Add arguments
+            cmd.extend([
                 "-i", str(input_path.absolute()),
                 "-o", str(temp_output.absolute()),
                 "-device", self.device
-            ]
+            ])
 
             # Add optional flags
             if not self.use_tta:
@@ -129,7 +238,8 @@ class HDBETProcessor:
 
             # Log command if verbose
             if self.verbose:
-                print(f"Running HD-BET command: {' '.join(cmd)}")
+                backend_name = "module" if self._execution_backend == "subprocess_module" else "native"
+                print(f"Running HD-BET ({backend_name}): {' '.join(cmd)}")
 
             # Run HD-BET with file-based output handling to avoid pipe buffer issues
             with open(temp_stdout, "w") as fout, open(temp_stderr, "w") as ferr:
@@ -240,6 +350,93 @@ class HDBETProcessor:
                     temp_file.unlink()
                 except:
                     pass
+
+    def _process_with_api(
+        self,
+        input_path: Path,
+        output_brain: Path,
+        output_mask: Path,
+        task_id: Optional[str] = None
+    ) -> Tuple[str, Optional[str]]:
+        """
+        Process using direct Python API import (no subprocess).
+        Best for small files or when subprocess fails.
+        """
+        try:
+            from HD_BET.run import run_hd_bet
+
+            # Ensure output directory exists (thread-safe)
+            with self.dir_lock:
+                output_brain.parent.mkdir(parents=True, exist_ok=True)
+
+            task_id = task_id or f"{time.time()}"
+
+            # HD_BET API expects specific naming
+            temp_output = str(output_brain.parent / f"temp_{task_id}.nii.gz")
+
+            if self.verbose:
+                print(f"Using HD-BET API directly for {input_path.name}")
+
+            # Run HD-BET with timeout using threading
+            result = {"success": False, "error": None}
+
+            def run_hd_bet_thread():
+                try:
+                    run_hd_bet(
+                        input_file=str(input_path),
+                        output_file=temp_output,
+                        mode="accurate" if self.use_tta else "fast",
+                        device=self.device,
+                        tta=self.use_tta,
+                        save_mask=True,
+                        overwrite_existing=True
+                    )
+                    result["success"] = True
+                except Exception as e:
+                    result["error"] = str(e)
+
+            # Run in thread with timeout
+            thread = threading.Thread(target=run_hd_bet_thread)
+            thread.daemon = True
+            thread.start()
+            thread.join(timeout=self.timeout_sec)
+
+            if thread.is_alive():
+                # Timeout occurred
+                return "timeout", f"API call timeout after {self.timeout_sec}s"
+
+            if not result["success"]:
+                return "error", f"API error: {result['error']}"
+
+            # Move output files
+            hd_bet_brain = Path(temp_output)
+            hd_bet_mask = Path(str(temp_output).replace(".nii.gz", "_bet.nii.gz"))
+
+            if hd_bet_brain.exists():
+                shutil.move(str(hd_bet_brain), str(output_brain))
+            else:
+                return "error", "Brain extraction file not created"
+
+            if hd_bet_mask.exists():
+                shutil.move(str(hd_bet_mask), str(output_mask))
+
+            # Verify output
+            if output_brain.exists():
+                return "success", None
+            else:
+                return "error", "Output file not created"
+
+        except ImportError as e:
+            return "error", f"Failed to import HD_BET: {e}"
+        except Exception as e:
+            return "error", f"API execution failed: {str(e)}"
+        finally:
+            # Clean up any remaining temp files
+            try:
+                for temp_file in output_brain.parent.glob(f"temp_{task_id}*"):
+                    temp_file.unlink(missing_ok=True)
+            except:
+                pass
 
     def process_batch(
         self,
