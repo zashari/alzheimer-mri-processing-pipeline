@@ -5,6 +5,29 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.5.1] - 2025-11-14
+
+### Fixed
+- **Critical: Fixed HD-BET command-line arguments**
+  - Corrected TTA argument from `--disable_tta` to `-tta 0/1` format
+  - Fixed mask saving argument from `--save_bet_mask` to `-s 1`
+  - Added `-mode fast` when TTA is disabled for better performance
+- **Windows multiprocessing deadlock prevention**
+  - Set single-threading environment variables on Windows (OMP_NUM_THREADS=1, etc.)
+  - Prevents nnU-Net multiprocessing deadlocks that cause hanging
+  - Based on research of HD-BET/nnU-Net Windows issues
+
+### Changed
+- **Enhanced Windows compatibility**
+  - Forces single-threaded execution on Windows to prevent deadlocks
+  - Provides verbose output about Windows-specific optimizations
+  - Environment variables passed to subprocess to control threading
+
+### Technical Details
+- Discovered incorrect argument format was causing silent failures
+- Windows multiprocessing issues in nnU-Net were causing JSON files to be created but processing to hang
+- Solution based on analysis of sh-shahrokhi/HD-BET fork and nnU-Net issue reports
+
 ## [1.5.0] - 2025-11-14
 
 ### Added

@@ -229,17 +229,33 @@ class HDBETProcessor:
                 "-device", self.device
             ])
 
-            # Add optional flags
+            # Add mode flag for fast execution (especially important for CPU/Windows)
+            # Using fast mode when TTA is disabled for better performance
             if not self.use_tta:
-                cmd.append("--disable_tta")
+                cmd.extend(["-mode", "fast"])
+
+            # Add TTA flag (test-time augmentation)
+            # -tta 0 = disable (fast), -tta 1 = enable (accurate but slower)
+            cmd.extend(["-tta", "0" if not self.use_tta else "1"])
 
             # Save mask file
-            cmd.append("--save_bet_mask")
+            cmd.extend(["-s", "1"])  # -s 1 saves the mask
 
             # Log command if verbose
             if self.verbose:
                 backend_name = "module" if self._execution_backend == "subprocess_module" else "native"
                 print(f"Running HD-BET ({backend_name}): {' '.join(cmd)}")
+
+            # Setup environment for Windows to prevent multiprocessing deadlocks
+            env = os.environ.copy()
+            if platform.system() == "Windows":
+                # Force single-threading to prevent Windows multiprocessing issues
+                env["OMP_NUM_THREADS"] = "1"
+                env["MKL_NUM_THREADS"] = "1"
+                env["NUMEXPR_NUM_THREADS"] = "1"
+                env["OPENBLAS_NUM_THREADS"] = "1"
+                if self.verbose:
+                    print("Windows detected: Using single-threaded execution to prevent deadlocks")
 
             # Run HD-BET with file-based output handling to avoid pipe buffer issues
             with open(temp_stdout, "w") as fout, open(temp_stderr, "w") as ferr:
@@ -247,6 +263,7 @@ class HDBETProcessor:
                     cmd,
                     stdout=fout,
                     stderr=ferr,
+                    env=env,  # Pass the environment with Windows fixes
                     cwd=str(Path.cwd()),  # Explicitly set working directory
                     # Prevent process from hanging on to resources
                     close_fds=(os.name != 'nt'),  # close_fds=True not supported on Windows
