@@ -5,6 +5,39 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.5.2] - 2025-11-15
+
+### Added
+- **Automatic HD-BET version detection**: Detects whether original or patched fork is installed
+  - Automatically adapts command arguments based on detected version
+  - Supports both original HD-BET and sh-shahrokhi/HD-BET fork
+  - Provides verbose output about which version is detected
+
+### Changed
+- **Dual version support**: Single codebase now works with both HD-BET versions
+  - Original HD-BET: Uses `--disable_tta` and `--save_bet_mask` arguments
+  - Patched fork: Uses `-tta 0/1`, `-s 1`, `-mode fast/accurate`, `-pp 1` arguments
+  - Automatic detection ensures correct arguments are always used
+
+### Fixed
+- **Windows compatibility**: Resolved hanging issues with patched HD-BET fork
+  - The sh-shahrokhi fork includes critical Windows fixes
+  - Proper argument format for the fork version
+  - Combined with threading environment variables for maximum compatibility
+
+### Recommended
+- **For Windows users**: Install the patched fork for best results
+  ```bash
+  pip uninstall HD-BET
+  pip install git+https://github.com/sh-shahrokhi/HD-BET.git
+  ```
+- **For Unix/Linux users**: Either version works, but fork has additional bug fixes
+
+### Technical Details
+- Version detection based on help text analysis (`-tta` and `-mode` presence)
+- Fork provides better Windows support, Python 3.12 compatibility, and NumPy 1.25+ fixes
+- Maintains full cross-platform compatibility with automatic adaptation
+
 ## [1.5.1] - 2025-11-14
 
 ### Fixed

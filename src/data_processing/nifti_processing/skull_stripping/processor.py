@@ -38,6 +38,7 @@ class HDBETProcessor:
         self.is_test_mode = is_test_mode
         self.execution_method = execution_method
         self._execution_backend = None  # Will be determined in _setup_execution_backend()
+        self._hd_bet_fork_version = False  # Will be detected when checking availability
 
         # Setup temp directory for subprocess output files
         if temp_dir:
@@ -53,7 +54,7 @@ class HDBETProcessor:
             print("Note: HD-BET models may need to be downloaded on first run (this can take time)")
 
     def check_availability(self) -> bool:
-        """Check if HD-BET is installed and accessible."""
+        """Check if HD-BET is installed and accessible, and detect version."""
         try:
             # Use PIPE to avoid file locking issues
             result = subprocess.run(
@@ -64,7 +65,20 @@ class HDBETProcessor:
                 timeout=60,
             )
 
-            return result.returncode == 0
+            if result.returncode == 0:
+                # Detect fork version from help text
+                help_text = result.stdout + result.stderr
+                if "-tta" in help_text and "-mode" in help_text:
+                    self._hd_bet_fork_version = True
+                    if self.verbose:
+                        print("✓ Using patched HD-BET fork with Windows fixes")
+                else:
+                    self._hd_bet_fork_version = False
+                    if self.verbose:
+                        print("✓ Using original HD-BET version")
+                return True
+
+            return False
 
         except FileNotFoundError:
             return False
@@ -118,15 +132,28 @@ class HDBETProcessor:
         return "subprocess_native"
 
     def _test_native_command(self) -> bool:
-        """Test if native hd-bet command is available."""
+        """Test if native hd-bet command is available and detect version."""
         try:
             result = subprocess.run(
                 ["hd-bet", "--help"],
                 stdout=subprocess.PIPE,
                 stderr=subprocess.PIPE,
+                text=True,
                 timeout=5
             )
-            return result.returncode == 0
+            if result.returncode == 0:
+                # Check if it's the patched fork by looking for -tta in help
+                help_text = result.stdout + result.stderr
+                if "-tta" in help_text and "-mode" in help_text:
+                    self._hd_bet_fork_version = True
+                    if self.verbose:
+                        print("Detected patched HD-BET fork (sh-shahrokhi version)")
+                else:
+                    self._hd_bet_fork_version = False
+                    if self.verbose:
+                        print("Detected original HD-BET version")
+                return True
+            return False
         except (FileNotFoundError, subprocess.TimeoutExpired):
             return False
         except Exception:
@@ -229,12 +256,22 @@ class HDBETProcessor:
                 "-device", self.device
             ])
 
-            # Add optional flags
-            if not self.use_tta:
-                cmd.append("--disable_tta")
-
-            # Save mask file
-            cmd.append("--save_bet_mask")
+            # Add version-specific arguments
+            if self._hd_bet_fork_version:
+                # Patched fork format (sh-shahrokhi version)
+                # Add mode for better performance
+                cmd.extend(["-mode", "accurate" if self.use_tta else "fast"])
+                # TTA flag: -tta 1 (enable) or -tta 0 (disable)
+                cmd.extend(["-tta", "1" if self.use_tta else "0"])
+                # Save mask: -s 1 (save) or -s 0 (don't save)
+                cmd.extend(["-s", "1"])
+                # Enable postprocessing
+                cmd.extend(["-pp", "1"])
+            else:
+                # Original HD-BET format
+                if not self.use_tta:
+                    cmd.append("--disable_tta")
+                cmd.append("--save_bet_mask")
 
             # Log command if verbose
             if self.verbose:

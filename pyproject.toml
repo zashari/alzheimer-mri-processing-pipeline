@@ -3,7 +3,7 @@
 
 [project]
 name = "alzheimer-disease-processing-py-format"
-version = "1.5.1"
+version = "1.5.2"
 description = "Complete 3D NIfTI preprocessing pipeline for ADNI T1-weighted MRI data"
 authors = [
     {name = "Zaky Ashari", email = "izzat.zaky@gmail.com"}
@@ -38,7 +38,7 @@ adp = "data_processing.cli:main"
 
 [tool.poetry]
 name = "alzheimer-disease-processing-py-format"
-version = "1.5.1"
+version = "1.5.2"
 description = "Complete 3D NIfTI preprocessing pipeline for ADNI T1-weighted MRI data"
 authors = ["Zaky Ashari <izzat.zaky@gmail.com>"]
 license = "MIT"
