@@ -1,7 +1,10 @@
 """HD-BET skull stripping processor."""
 
+print("[DEBUG PROCESSOR] Starting processor.py import")
+
 from __future__ import annotations
 
+print("[DEBUG PROCESSOR] Importing standard libraries")
 import shutil
 import subprocess
 import threading
@@ -9,7 +12,9 @@ import time
 from pathlib import Path
 from typing import Dict, List, Optional, Tuple
 
+print("[DEBUG PROCESSOR] Importing gpu_utils")
 from ..gpu_utils import kill_zombie_processes
+print("[DEBUG PROCESSOR] processor.py imports complete")
 
 
 class HDBETProcessor:

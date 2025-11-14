@@ -38,10 +38,16 @@ def available_stages() -> Dict[str, Type[BaseStage]]:
 # Import concrete stages to trigger self-registration at import time
 # Keep imports at the end to avoid circulars
 try:  # pragma: no cover
+    print("[DEBUG STAGES] Importing environment_setup_stage")
     from . import environment_setup_stage  # noqa: F401
+    print("[DEBUG STAGES] Importing data_preparation_stage")
     from . import data_preparation_stage  # noqa: F401
+    print("[DEBUG STAGES] Importing nifti_processing_stage")
     from . import nifti_processing_stage  # noqa: F401
+    print("[DEBUG STAGES] Importing image_processing_stage")
     from . import image_processing_stage  # noqa: F401
-except Exception:
+    print("[DEBUG STAGES] All stage imports complete")
+except Exception as e:
     # It's okay if import fails in some tooling contexts; CLI will import later
+    print(f"[DEBUG STAGES] Stage import failed: {e}")
     pass

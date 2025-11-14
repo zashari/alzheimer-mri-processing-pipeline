@@ -1,5 +1,7 @@
 """GPU memory management utilities for NIfTI processing."""
 
+print("[DEBUG GPU_UTILS] Starting gpu_utils import")
+
 from __future__ import annotations
 
 import gc
@@ -10,12 +12,19 @@ import platform
 import threading
 from typing import Dict, Optional
 
+print("[DEBUG GPU_UTILS] Standard imports done, attempting torch import")
+
 # Try to import torch (may not be available)
 try:
+    print("[DEBUG GPU_UTILS] Importing torch...")
     import torch
+    print("[DEBUG GPU_UTILS] Torch imported successfully")
     TORCH_AVAILABLE = True
-except ImportError:
+except ImportError as e:
+    print(f"[DEBUG GPU_UTILS] Torch import failed: {e}")
     TORCH_AVAILABLE = False
+
+print("[DEBUG GPU_UTILS] gpu_utils module loaded")
 
 
 def get_gpu_memory_info() -> Optional[Dict]:
