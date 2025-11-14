@@ -5,6 +5,32 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.4.6] - 2025-11-14
+
+### Changed
+- **Complete subprocess handling rewrite for skull stripping**: Replaced `subprocess.Popen()` with `subprocess.run()`
+  - Switched from complex Popen with file handles to simpler subprocess.run() with capture_output
+  - Matches the exact working pattern from the Jupyter notebook test implementation
+  - Eliminates all file handle management issues on Windows
+  - Automatic handling of close_fds parameter based on Python version and platform
+
+### Fixed
+- **Resolved HD-BET hanging issue on Windows**: Fixed 600-second timeout problem
+  - Previous fix attempts with close_fds manipulation were insufficient
+  - subprocess.run() internally handles all platform-specific quirks correctly
+  - Proven to work in the notebook implementation
+
+### Removed
+- Removed temporary file handling for stdout/stderr (no longer needed with subprocess.run())
+- Removed _safe_delete() function (no temp files to manage)
+- Cleaned up unused imports (os, signal, tempfile)
+
+### Technical Details
+- Completely rewrote `HDBETProcessor.process_file()` method in `processor.py`
+- Uses `subprocess.run(cmd, capture_output=True, text=True, timeout=...)` pattern
+- Simplified error handling with direct access to result.stdout and result.stderr
+- Reduced code complexity while improving reliability
+
 ## [1.4.5] - 2025-11-14
 
 ### Fixed

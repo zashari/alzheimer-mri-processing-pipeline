@@ -2,37 +2,14 @@
 
 from __future__ import annotations
 
-import os
 import shutil
-import signal
 import subprocess
-import tempfile
 import threading
 import time
 from pathlib import Path
 from typing import Dict, List, Optional, Tuple
 
 from ..gpu_utils import kill_zombie_processes
-
-
-def _safe_delete(file_path: Path, max_retries: int = 3, delay: float = 0.1) -> None:
-    """
-    Safely delete file with retry logic for Windows file locking issues.
-    
-    Args:
-        file_path: Path to file to delete
-        max_retries: Maximum number of retry attempts
-        delay: Initial delay between retries (exponential backoff)
-    """
-    for attempt in range(max_retries):
-        try:
-            file_path.unlink(missing_ok=True)
-            break
-        except PermissionError:
-            if attempt < max_retries - 1:
-                # Exponential backoff: delay * (attempt + 1)
-                time.sleep(delay * (attempt + 1))
-            # Last attempt failed, silently continue (file is in temp dir anyway)
 
 
 class HDBETProcessor:
@@ -48,8 +25,7 @@ class HDBETProcessor:
         self.device = device
         self.use_tta = use_tta
         self.timeout_sec = timeout_sec
-        self.temp_dir = temp_dir or Path(tempfile.gettempdir()) / "hd_bet_temp"
-        self.temp_dir.mkdir(parents=True, exist_ok=True)
+        # temp_dir kept for compatibility but not used with subprocess.run()
         self.dir_lock = threading.Lock()  # Thread-safe directory creation
 
     def check_availability(self) -> bool:
@@ -82,7 +58,7 @@ class HDBETProcessor:
         task_id: Optional[str] = None
     ) -> Tuple[str, Optional[str]]:
         """
-        Process a single NIfTI file with HD-BET.
+        Process a single NIfTI file with HD-BET using subprocess.run().
 
         Args:
             input_path: Path to input NIfTI file
@@ -104,10 +80,6 @@ class HDBETProcessor:
 
         task_id = task_id or f"{time.time()}"
 
-        # Create temporary files for stdout and stderr (unlimited buffer, no deadlock risk)
-        temp_stdout = self.temp_dir / f"hd_bet_{task_id}.out"
-        temp_stderr = self.temp_dir / f"hd_bet_{task_id}.err"
-
         try:
             # HD-BET requires output to end with .nii.gz
             # Use a temporary name that HD-BET expects
@@ -128,60 +100,30 @@ class HDBETProcessor:
             # Save mask file
             cmd.append("--save_bet_mask")
 
-            # Hybrid approach: File handles for both stdout and stderr + wait() for fast execution
-            # - stdout: File handle (unlimited buffer, no deadlock risk, proper Windows inheritance)
-            # - stderr: File handle (unlimited buffer, no deadlock risk)
-            # - Use wait() instead of communicate() for fast execution
-            # - File handles ensure proper handle inheritance on Windows (avoids timeout issues)
-            with open(temp_stdout, "w") as fout, open(temp_stderr, "w") as ferr:
-                if os.name != "nt":  # Unix-like systems
-                    process = subprocess.Popen(
-                        cmd,
-                        stdout=fout,
-                        stderr=ferr,
-                        close_fds=True,
-                        preexec_fn=os.setsid
-                    )
-                else:  # Windows
-                    process = subprocess.Popen(
-                        cmd,
-                        stdout=fout,
-                        stderr=ferr
-                        # Note: close_fds=True removed for Windows compatibility with file handles
-                    )
+            # Use subprocess.run() with capture_output for simplicity and reliability
+            # This matches the working pattern from the notebook test
+            try:
+                result = subprocess.run(
+                    cmd,
+                    capture_output=True,
+                    text=True,
+                    timeout=self.timeout_sec,
+                    # close_fds is automatically handled by subprocess.run()
+                    # On Windows with Python 3.7+, it defaults correctly
+                )
 
-                try:
-                    # Fast execution: wait() instead of communicate()
-                    # wait() just waits for process exit, doesn't read output
-                    returncode = process.wait(timeout=self.timeout_sec)
+                if result.returncode != 0:
+                    # Extract error message from stderr
+                    error_msg = result.stderr[:500] if result.stderr else "Unknown error"
+                    return "error", f"HD-BET failed (code {result.returncode}): {error_msg}"
 
-                except subprocess.TimeoutExpired:
-                    # Kill the process on timeout
-                    if os.name != "nt":
-                        try:
-                            os.killpg(os.getpgid(process.pid), signal.SIGTERM)
-                            time.sleep(2)
-                            os.killpg(os.getpgid(process.pid), signal.SIGKILL)
-                        except:
-                            process.kill()
-                    else:
-                        process.terminate()
-                        time.sleep(2)
-                        process.kill()
+            except subprocess.TimeoutExpired as e:
+                # The process timed out
+                return "timeout", f"Timeout after {self.timeout_sec}s"
 
-                    return "timeout", f"Timeout after {self.timeout_sec}s"
-
-            # File handles closed here (after wait completes)
-            # Subprocess should have released them by now
-
-            if returncode != 0:
-                # Read error from file (safe now, handle is closed)
-                try:
-                    with open(temp_stderr, "r") as ferr:
-                        error_msg = ferr.read()[:500]  # First 500 chars
-                except Exception:
-                    error_msg = "Could not read error file"
-                return "error", f"HD-BET failed (code {returncode}): {error_msg}"
+            except Exception as e:
+                # Other subprocess errors
+                return "error", f"Subprocess error: {str(e)}"
 
             # HD-BET creates files with specific naming
             hd_bet_brain = temp_output
@@ -209,13 +151,12 @@ class HDBETProcessor:
             return "error", str(e)
 
         finally:
-            # Clean up temp files with retry logic (handle Windows file locking)
-            _safe_delete(temp_stdout)
-            _safe_delete(temp_stderr)
-            
             # Clean up any remaining temp output files (HD-BET output files)
             for temp_file in output_brain.parent.glob(f"temp_{task_id}*"):
-                temp_file.unlink(missing_ok=True)
+                try:
+                    temp_file.unlink()
+                except:
+                    pass
 
     def process_batch(
         self,
@@ -259,16 +200,8 @@ class HDBETProcessor:
         return results
 
     def cleanup(self) -> None:
-        """Clean up temporary files and kill zombie processes."""
+        """Kill any zombie HD-BET processes."""
         # Kill any hanging HD-BET processes
         killed = kill_zombie_processes("hd-bet")
         if killed > 0:
             print(f"Killed {killed} hanging HD-BET processes")
-
-        # Clean up temp directory
-        if self.temp_dir.exists():
-            for temp_file in self.temp_dir.glob("hd_bet_*"):
-                try:
-                    temp_file.unlink()
-                except:
-                    pass
