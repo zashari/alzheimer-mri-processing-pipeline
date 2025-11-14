@@ -5,6 +5,28 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.5.3] - 2025-11-15
+
+### Fixed
+- **Critical: Fixed execution backend selection on Windows**
+  - Now properly tests native command on Windows (was skipping to module execution)
+  - Tests hd-bet.cmd, hd-bet, and hd-bet.py variants on Windows
+  - Ensures subprocess method is used when available, not falling back to API unnecessarily
+- **Fixed API method parameters for patched fork**
+  - Corrected parameter names: `mri_fnames` and `output_fnames` (not `input`/`output`)
+  - Fixed device parameter handling (int for GPU, 'cpu' for CPU)
+  - Added postprocess parameter for removing small components
+- **Improved debugging output**
+  - Shows selected execution backend in verbose mode
+  - Warns when falling back to API method
+  - Better visibility into which HD-BET command variant is found
+
+### Technical Details
+- The issue was that Windows was skipping the native command test and going straight to module execution
+- When both subprocess methods failed, it fell back to API with incorrect parameters
+- Now properly detects hd-bet.cmd on Windows and uses subprocess execution
+- API method updated with correct fork parameters as fallback
+
 ## [1.5.2] - 2025-11-15
 
 ### Added

@@ -1,5 +1,5 @@
 [![License](https://img.shields.io/badge/license-MIT-informational)](./LICENSE)
-[![Version](https://img.shields.io/badge/version-1.5.2-blue)](./docs/CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-1.5.3-blue)](./docs/CHANGELOG.md)
 [![Python](https://img.shields.io/badge/python-3.11%2B-blue)](https://www.python.org/downloads/)
 [![Cite](https://img.shields.io/badge/cite-CITATION.cff-blue)](./CITATION.cff)
 [![Status](https://img.shields.io/badge/status-stable-success)](./docs/CHANGELOG.md)

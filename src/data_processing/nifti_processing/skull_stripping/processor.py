@@ -114,14 +114,13 @@ class HDBETProcessor:
         # Auto-detection logic
         system = platform.system()
 
-        # Strategy 1: Check if native hd-bet command works (best for Unix)
-        if system in ["Linux", "Darwin"]:  # Unix-like systems
-            if self._test_native_command():
-                if self.verbose:
-                    print("✓ Using native hd-bet command (Unix)")
-                return "subprocess_native"
+        # Strategy 1: Check if native hd-bet command works (works for all OS now)
+        if self._test_native_command():
+            if self.verbose:
+                print(f"✓ Using native hd-bet command on {system}")
+            return "subprocess_native"
 
-        # Strategy 2: For Windows or if native fails, try Python module execution
+        # Strategy 2: If native fails, try Python module execution
         if self._test_module_execution():
             if self.verbose:
                 print(f"✓ Using Python module execution (-m HD_BET) on {system}")
@@ -237,6 +236,8 @@ class HDBETProcessor:
         # Setup execution backend on first run
         if self._execution_backend is None:
             self._execution_backend = self._setup_execution_backend()
+            if self.verbose:
+                print(f"Selected execution backend: {self._execution_backend}")
 
         # Check if output already exists
         if output_brain.exists():
@@ -244,6 +245,8 @@ class HDBETProcessor:
 
         # Route to appropriate execution method
         if self._execution_backend == "api_direct":
+            if self.verbose:
+                print("Warning: Using API fallback - subprocess methods failed")
             return self._process_with_api(input_path, output_brain, output_mask, task_id)
         else:
             return self._process_with_subprocess(input_path, output_brain, output_mask, task_id)
@@ -461,15 +464,16 @@ class HDBETProcessor:
 
             def run_hd_bet_thread():
                 try:
-                    # The patched fork uses different argument names
+                    # The patched fork API signature from run.py
                     run_hd_bet(
-                        input=str(input_path),  # Changed from input_file
-                        output=temp_output,     # Changed from output_file
+                        mri_fnames=str(input_path),     # First positional arg
+                        output_fnames=temp_output,      # Second positional arg
                         mode="accurate" if self.use_tta else "fast",
-                        device=self.device,
-                        tta=1 if self.use_tta else 0,  # Fork expects 0/1 not bool
-                        save_mask=1,  # Fork expects 1 not True
-                        overwrite_existing=1  # Fork expects 1 not True
+                        device=self.device if self.device != "cuda" else 0,  # int or 'cpu'
+                        do_tta=self.use_tta,             # Boolean is fine
+                        keep_mask=True,                  # Keep the mask file
+                        overwrite=True,                  # Overwrite existing
+                        postprocess=True                 # Remove small components
                     )
                     result["success"] = True
                 except Exception as e:
