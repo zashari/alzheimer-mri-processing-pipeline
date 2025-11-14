@@ -141,6 +141,7 @@ class HDBETProcessor:
     def _test_native_command(self) -> bool:
         """Test if native hd-bet command is available and detect version."""
         try:
+            result = None
             # On Windows, try different command variants
             if platform.system() == "Windows":
                 # Try hd-bet.cmd first (patched fork on Windows)
@@ -168,17 +169,19 @@ class HDBETProcessor:
                     timeout=5
                 )
                 self._hd_bet_command = "hd-bet"
-            if result.returncode == 0:
+
+            # Check if we found a working command
+            if result and result.returncode == 0:
                 # Check if it's the patched fork by looking for -tta in help
                 help_text = result.stdout + result.stderr
                 if "-tta" in help_text and "-mode" in help_text:
                     self._hd_bet_fork_version = True
                     if self.verbose:
-                        print("Detected patched HD-BET fork (sh-shahrokhi version)")
+                        print(f"Detected patched HD-BET fork ({self._hd_bet_command})")
                 else:
                     self._hd_bet_fork_version = False
                     if self.verbose:
-                        print("Detected original HD-BET version")
+                        print(f"Detected original HD-BET version ({self._hd_bet_command})")
                 return True
             return False
         except (FileNotFoundError, subprocess.TimeoutExpired):
@@ -458,14 +461,15 @@ class HDBETProcessor:
 
             def run_hd_bet_thread():
                 try:
+                    # The patched fork uses different argument names
                     run_hd_bet(
-                        input_file=str(input_path),
-                        output_file=temp_output,
+                        input=str(input_path),  # Changed from input_file
+                        output=temp_output,     # Changed from output_file
                         mode="accurate" if self.use_tta else "fast",
                         device=self.device,
-                        tta=self.use_tta,
-                        save_mask=True,
-                        overwrite_existing=True
+                        tta=1 if self.use_tta else 0,  # Fork expects 0/1 not bool
+                        save_mask=1,  # Fork expects 1 not True
+                        overwrite_existing=1  # Fork expects 1 not True
                     )
                     result["success"] = True
                 except Exception as e:
