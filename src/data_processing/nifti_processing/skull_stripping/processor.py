@@ -39,6 +39,7 @@ class HDBETProcessor:
         self.execution_method = execution_method
         self._execution_backend = None  # Will be determined in _setup_execution_backend()
         self._hd_bet_fork_version = False  # Will be detected when checking availability
+        self._hd_bet_command = "hd-bet"  # Will be updated based on what's available
 
         # Setup temp directory for subprocess output files
         if temp_dir:
@@ -56,35 +57,41 @@ class HDBETProcessor:
     def check_availability(self) -> bool:
         """Check if HD-BET is installed and accessible, and detect version."""
         try:
-            # Use PIPE to avoid file locking issues
-            result = subprocess.run(
-                ["hd-bet", "--help"],
-                stdout=subprocess.PIPE,
-                stderr=subprocess.PIPE,
-                text=True,
-                timeout=60,
-            )
+            # On Windows, try different command variants
+            commands_to_try = []
+            if platform.system() == "Windows":
+                commands_to_try = ["hd-bet.cmd", "hd-bet", "hd-bet.py"]
+            else:
+                commands_to_try = ["hd-bet"]
 
-            if result.returncode == 0:
-                # Detect fork version from help text
-                help_text = result.stdout + result.stderr
-                if "-tta" in help_text and "-mode" in help_text:
-                    self._hd_bet_fork_version = True
-                    if self.verbose:
-                        print("✓ Using patched HD-BET fork with Windows fixes")
-                else:
-                    self._hd_bet_fork_version = False
-                    if self.verbose:
-                        print("✓ Using original HD-BET version")
-                return True
+            for cmd_variant in commands_to_try:
+                try:
+                    result = subprocess.run(
+                        [cmd_variant, "--help"],
+                        stdout=subprocess.PIPE,
+                        stderr=subprocess.PIPE,
+                        text=True,
+                        timeout=60,
+                    )
+
+                    if result.returncode == 0:
+                        self._hd_bet_command = cmd_variant  # Store the working command
+                        # Detect fork version from help text
+                        help_text = result.stdout + result.stderr
+                        if "-tta" in help_text and "-mode" in help_text:
+                            self._hd_bet_fork_version = True
+                            if self.verbose:
+                                print(f"✓ Using patched HD-BET fork ({cmd_variant}) with Windows fixes")
+                        else:
+                            self._hd_bet_fork_version = False
+                            if self.verbose:
+                                print(f"✓ Using original HD-BET version ({cmd_variant})")
+                        return True
+                except:
+                    continue
 
             return False
 
-        except FileNotFoundError:
-            return False
-        except subprocess.TimeoutExpired:
-            # HD-BET command timed out but might still work
-            return True
         except Exception:
             return False
 
@@ -134,13 +141,33 @@ class HDBETProcessor:
     def _test_native_command(self) -> bool:
         """Test if native hd-bet command is available and detect version."""
         try:
-            result = subprocess.run(
-                ["hd-bet", "--help"],
-                stdout=subprocess.PIPE,
-                stderr=subprocess.PIPE,
-                text=True,
-                timeout=5
-            )
+            # On Windows, try different command variants
+            if platform.system() == "Windows":
+                # Try hd-bet.cmd first (patched fork on Windows)
+                for cmd_variant in ["hd-bet.cmd", "hd-bet", "hd-bet.py"]:
+                    try:
+                        result = subprocess.run(
+                            [cmd_variant, "--help"],
+                            stdout=subprocess.PIPE,
+                            stderr=subprocess.PIPE,
+                            text=True,
+                            timeout=5
+                        )
+                        if result.returncode == 0:
+                            self._hd_bet_command = cmd_variant  # Store the working command
+                            break
+                    except:
+                        continue
+            else:
+                # Unix systems
+                result = subprocess.run(
+                    ["hd-bet", "--help"],
+                    stdout=subprocess.PIPE,
+                    stderr=subprocess.PIPE,
+                    text=True,
+                    timeout=5
+                )
+                self._hd_bet_command = "hd-bet"
             if result.returncode == 0:
                 # Check if it's the patched fork by looking for -tta in help
                 help_text = result.stdout + result.stderr
@@ -247,7 +274,7 @@ class HDBETProcessor:
             if self._execution_backend == "subprocess_module":
                 cmd = [sys.executable, "-m", "HD_BET"]
             else:
-                cmd = ["hd-bet"]
+                cmd = [self._hd_bet_command]  # Use the detected command variant
 
             # Add arguments
             cmd.extend([
