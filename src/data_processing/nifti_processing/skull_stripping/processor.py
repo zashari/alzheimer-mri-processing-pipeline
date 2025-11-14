@@ -229,17 +229,12 @@ class HDBETProcessor:
                 "-device", self.device
             ])
 
-            # Add mode flag for fast execution (especially important for CPU/Windows)
-            # Using fast mode when TTA is disabled for better performance
+            # Add optional flags
             if not self.use_tta:
-                cmd.extend(["-mode", "fast"])
-
-            # Add TTA flag (test-time augmentation)
-            # -tta 0 = disable (fast), -tta 1 = enable (accurate but slower)
-            cmd.extend(["-tta", "0" if not self.use_tta else "1"])
+                cmd.append("--disable_tta")
 
             # Save mask file
-            cmd.extend(["-s", "1"])  # -s 1 saves the mask
+            cmd.append("--save_bet_mask")
 
             # Log command if verbose
             if self.verbose:
