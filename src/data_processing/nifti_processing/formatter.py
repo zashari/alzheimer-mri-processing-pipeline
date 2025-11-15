@@ -144,7 +144,7 @@ class NiftiFormatter:
             SpinnerColumn(),
             TextColumn("[progress.description]{task.description}"),
             BarColumn(),
-            TextColumn("[progress.percentage]{task.percentage:>3.0f}%"),
+            TextColumn("[progress.percentage]{task.percentage:>5.1f}%"),
             TimeRemainingColumn(),
             console=self.console
         )

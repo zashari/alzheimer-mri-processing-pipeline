@@ -352,9 +352,11 @@ def run_process(cfg: Dict, formatter: NiftiFormatter) -> int:
     current_success = 0
     current_failed = 0
     current_skipped = len(tasks_to_skip)  # Pre-existing skips
+    total_files = len(tasks_to_process)
+    files_processed = 0
 
     with formatter.create_progress_bar() as progress:
-        task = progress.add_task("[cyan]Initializing...[/cyan]", total=len(tasks_to_process))
+        task = progress.add_task("[cyan]Initializing...[/cyan]", total=total_files)
 
         for i in range(0, len(tasks_to_process), subjects_per_batch):
             batch_num += 1
@@ -371,10 +373,11 @@ def run_process(cfg: Dict, formatter: NiftiFormatter) -> int:
                 nonlocal current_success, current_failed, current_skipped
 
                 if event == 'start':
-                    # Show current file being processed
+                    # Show current file being processed with file counter
                     file_name = kwargs.get('file_name', 'Unknown')
+                    current_file_num = files_processed + current_idx + 1
                     progress.update(task,
-                        description=f"Processing {file_name}")
+                        description=f"[dim]{current_file_num}/{total_files} files[/dim] | Processing {file_name}")
 
                 elif event == 'complete':
                     # Update counters based on status
@@ -396,6 +399,9 @@ def run_process(cfg: Dict, formatter: NiftiFormatter) -> int:
                     progress.update(task, description=stats_text)
 
             batch_results = processor.process_batch(processor_tasks, progress_callback)
+
+            # Update files processed counter for next batch
+            files_processed += len(batch)
 
             # Track results for final summary
             all_success.extend(batch_results["success"])
