@@ -3,9 +3,11 @@
 from __future__ import annotations
 
 import os
+import platform
 import shutil
 import signal
 import subprocess
+import sys
 import tempfile
 import threading
 import time
@@ -16,49 +18,175 @@ from ..gpu_utils import kill_zombie_processes
 
 
 class HDBETProcessor:
-    """Handles HD-BET skull stripping operations."""
+    """Handles HD-BET skull stripping operations with adaptive execution backend."""
 
     def __init__(
         self,
         device: str = "cuda",
         use_tta: bool = False,
         timeout_sec: int = 600,
-        temp_dir: Optional[Path] = None
+        temp_dir: Optional[Path] = None,
+        verbose: bool = False,
+        is_test_mode: bool = False,
+        execution_method: str = "auto"  # New: "auto", "subprocess", "module", "api"
     ):
         self.device = device
         self.use_tta = use_tta
+        # Use standard timeout (600s default)
         self.timeout_sec = timeout_sec
-        self.temp_dir = temp_dir or Path(tempfile.gettempdir()) / "hd_bet_temp"
+        self.verbose = verbose
+        self.is_test_mode = is_test_mode
+        self.execution_method = execution_method
+        self._execution_backend = None  # Will be determined in _setup_execution_backend()
+
+        # Setup temp directory for subprocess output files
+        if temp_dir:
+            self.temp_dir = temp_dir
+        else:
+            self.temp_dir = Path(tempfile.gettempdir()) / "hd_bet_output"
         self.temp_dir.mkdir(parents=True, exist_ok=True)
         self.dir_lock = threading.Lock()  # Thread-safe directory creation
+
+        # Setup CUDA memory management environment variables globally
+        # This is CRITICAL for preventing GPU OOM errors on GPUs with limited VRAM
+        if device == "cuda" and platform.system() == "Windows":
+            # Limit PyTorch CUDA memory allocation to smaller chunks
+            # This prevents PyTorch from trying to allocate 11+ GB at once
+            os.environ["PYTORCH_CUDA_ALLOC_CONF"] = "max_split_size_mb:512"
+
+            # Force synchronous CUDA execution for better memory management
+            os.environ["CUDA_LAUNCH_BLOCKING"] = "1"
+
+            # Limit CPU threads to prevent Windows multiprocessing issues
+            os.environ["OMP_NUM_THREADS"] = "1"
+            os.environ["MKL_NUM_THREADS"] = "1"
+            os.environ["NUMEXPR_NUM_THREADS"] = "1"
+            os.environ["OPENBLAS_NUM_THREADS"] = "1"
+            os.environ["TORCH_NUM_THREADS"] = "1"
+
+            if self.verbose:
+                print("Windows CUDA detected: Set global memory management environment variables")
+                print(f"  PYTORCH_CUDA_ALLOC_CONF = {os.environ.get('PYTORCH_CUDA_ALLOC_CONF')}")
+                print(f"  CUDA_LAUNCH_BLOCKING = {os.environ.get('CUDA_LAUNCH_BLOCKING')}")
+
+        # Check if HD-BET models are downloaded
+        hd_bet_home = Path.home() / ".hd-bet"
+        if not hd_bet_home.exists() and self.verbose:
+            print("Note: HD-BET models may need to be downloaded on first run (this can take time)")
 
     def check_availability(self) -> bool:
         """Check if HD-BET is installed and accessible."""
         try:
-            # Create temp files for output
-            temp_out = self.temp_dir / "hd_bet_test.txt"
-            temp_err = self.temp_dir / "hd_bet_test_err.txt"
+            # Simple check - just like in the notebook reference
+            result = subprocess.run(
+                ["hd-bet", "--help"],
+                capture_output=True,
+                text=True,
+                timeout=30  # Same timeout as notebook
+            )
 
-            with open(temp_out, "w") as fout, open(temp_err, "w") as ferr:
-                result = subprocess.run(
-                    ["hd-bet", "--help"],
-                    stdout=fout,
-                    stderr=ferr,
-                    timeout=60,
-                )
+            if result.returncode == 0:
+                if self.verbose:
+                    print("✅ HD-BET is available and working!")
+                return True
+            else:
+                if self.verbose:
+                    print("❌ HD-BET command failed")
+                    print(f"Error: {result.stderr}")
+                return False
 
-            # Clean up temp files
-            temp_out.unlink(missing_ok=True)
-            temp_err.unlink(missing_ok=True)
-
-            return result.returncode == 0
-
-        except FileNotFoundError:
-            return False
         except subprocess.TimeoutExpired:
-            # HD-BET command timed out but might still work
-            return True
+            if self.verbose:
+                print("⚠️  HD-BET check timed out, but continuing anyway...")
+            return True  # Continue anyway, like in notebook
+        except FileNotFoundError:
+            if self.verbose:
+                print("❌ HD-BET not found. Please ensure it's installed:")
+                print("   pip install hd-bet")
+            return False
+
+    def _setup_execution_backend(self) -> str:
+        """
+        Determine the best execution method for HD-BET based on platform and availability.
+
+        Returns:
+            str: The backend to use: "subprocess_native", "subprocess_module", or "api_direct"
+        """
+        # If user specified a method, try to use it
+        if self.execution_method != "auto":
+            if self.execution_method == "api":
+                return "api_direct"
+            elif self.execution_method == "module":
+                return "subprocess_module"
+            else:
+                return "subprocess_native"
+
+        # Auto-detection logic
+        system = platform.system()
+
+        # Strategy 1: Check if native hd-bet command works (works for all OS now)
+        if self._test_native_command():
+            if self.verbose:
+                print(f"✓ Using native hd-bet command on {system}")
+            return "subprocess_native"
+
+        # Strategy 2: If native fails, try Python module execution
+        if self._test_module_execution():
+            if self.verbose:
+                print(f"✓ Using Python module execution (-m HD_BET) on {system}")
+            return "subprocess_module"
+
+        # Strategy 3: Check if we can import HD_BET directly (fallback)
+        if self._test_api_import():
+            if self.verbose:
+                print("✓ Using direct API import (fallback)")
+            return "api_direct"
+
+        # Strategy 4: Last resort - try native anyway
+        if self.verbose:
+            print("⚠ No optimal method found, attempting native command")
+        return "subprocess_native"
+
+    def _test_native_command(self) -> bool:
+        """Test if native hd-bet command is available."""
+        try:
+            # Simple test - just use 'hd-bet' like in the notebook
+            result = subprocess.run(
+                ["hd-bet", "--help"],
+                capture_output=True,
+                text=True,
+                timeout=5
+            )
+
+            if result.returncode == 0:
+                if self.verbose:
+                    print("Found HD-BET command: hd-bet")
+                return True
+            return False
+        except (FileNotFoundError, subprocess.TimeoutExpired):
+            return False
         except Exception:
+            return False
+
+    def _test_module_execution(self) -> bool:
+        """Test if HD_BET can be run as a Python module."""
+        try:
+            result = subprocess.run(
+                [sys.executable, "-m", "HD_BET", "--help"],
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                timeout=5
+            )
+            return result.returncode == 0
+        except (subprocess.TimeoutExpired, Exception):
+            return False
+
+    def _test_api_import(self) -> bool:
+        """Test if HD_BET can be imported directly."""
+        try:
+            import HD_BET.run
+            return True
+        except ImportError:
             return False
 
     def process_file(
@@ -69,7 +197,11 @@ class HDBETProcessor:
         task_id: Optional[str] = None
     ) -> Tuple[str, Optional[str]]:
         """
-        Process a single NIfTI file with HD-BET.
+        Process a single NIfTI file using the optimal execution method.
+
+        This implementation automatically selects the best execution backend
+        based on platform and availability (subprocess_native, subprocess_module,
+        or api_direct).
 
         Args:
             input_path: Path to input NIfTI file
@@ -81,16 +213,41 @@ class HDBETProcessor:
             Tuple of (status, error_message)
             Status can be: "success", "skip", "timeout", or error message
         """
+        # Setup execution backend on first run
+        if self._execution_backend is None:
+            self._execution_backend = self._setup_execution_backend()
+            if self.verbose:
+                print(f"Selected execution backend: {self._execution_backend}")
+
         # Check if output already exists
         if output_brain.exists():
             return "skip", None
 
+        # Route to appropriate execution method
+        if self._execution_backend == "api_direct":
+            if self.verbose:
+                print("Warning: Using API fallback - subprocess methods failed")
+            return self._process_with_api(input_path, output_brain, output_mask, task_id)
+        else:
+            return self._process_with_subprocess(input_path, output_brain, output_mask, task_id)
+
+    def _process_with_subprocess(
+        self,
+        input_path: Path,
+        output_brain: Path,
+        output_mask: Path,
+        task_id: Optional[str] = None
+    ) -> Tuple[str, Optional[str]]:
+        """
+        Process using subprocess (either native command or Python module).
+        """
         # Ensure output directory exists (thread-safe)
         with self.dir_lock:
             output_brain.parent.mkdir(parents=True, exist_ok=True)
 
-        # Create temporary files for subprocess output
         task_id = task_id or f"{time.time()}"
+
+        # Create temporary files for subprocess output
         temp_stdout = self.temp_dir / f"hd_bet_{task_id}.out"
         temp_stderr = self.temp_dir / f"hd_bet_{task_id}.err"
 
@@ -99,63 +256,98 @@ class HDBETProcessor:
             # Use a temporary name that HD-BET expects
             temp_output = output_brain.parent / f"temp_{task_id}.nii.gz"
 
-            # Build HD-BET command
-            cmd = [
-                "hd-bet",
-                "-i", str(input_path),
-                "-o", str(temp_output),
-                "-device", self.device
-            ]
+            # Build command based on backend
+            if self._execution_backend == "subprocess_module":
+                cmd = [sys.executable, "-m", "HD_BET"]
+            else:
+                cmd = ["hd-bet"]  # Simple, just like the notebook
 
-            # Add optional flags
+            # Add arguments
+            cmd.extend([
+                "-i", str(input_path.absolute()),
+                "-o", str(temp_output.absolute())
+            ])
+
+            # Handle device parameter - original HD-BET expects 'cuda' or 'cpu'
+            cmd.extend(["-device", self.device])
+
+            # Add arguments for original HD-BET
             if not self.use_tta:
                 cmd.append("--disable_tta")
-
-            # Save mask file
             cmd.append("--save_bet_mask")
 
-            # Run HD-BET with output redirection
+            # Log command if verbose
+            if self.verbose:
+                backend_name = "module" if self._execution_backend == "subprocess_module" else "native"
+                print(f"Running HD-BET ({backend_name}): {' '.join(cmd)}")
+
+            # Run HD-BET with file-based output handling to avoid pipe buffer issues
             with open(temp_stdout, "w") as fout, open(temp_stderr, "w") as ferr:
-                # Create process with proper cleanup handling
-                if os.name != "nt":  # Unix-like systems
-                    process = subprocess.Popen(
-                        cmd,
-                        stdout=fout,
-                        stderr=ferr,
-                        close_fds=True,
-                        preexec_fn=os.setsid
-                    )
-                else:  # Windows
-                    process = subprocess.Popen(
-                        cmd,
-                        stdout=fout,
-                        stderr=ferr,
-                        close_fds=True
-                    )
+                process = subprocess.Popen(
+                    cmd,
+                    stdout=fout,
+                    stderr=ferr,
+                    cwd=str(Path.cwd()),  # Explicitly set working directory
+                    # Prevent process from hanging on to resources
+                    close_fds=(os.name != 'nt'),  # close_fds=True not supported on Windows
+                    # For Unix: create new process group for better control
+                    preexec_fn=os.setsid if os.name != "nt" else None,
+                )
 
                 try:
                     # Wait for completion with timeout
                     returncode = process.wait(timeout=self.timeout_sec)
 
                     if returncode != 0:
-                        # Read error output for debugging
-                        with open(temp_stderr, "r") as ferr:
-                            error_msg = ferr.read()[:500]  # First 500 chars
+                        # Read full output for debugging
+                        with open(temp_stdout, "r") as f:
+                            stdout_content = f.read()
+                        with open(temp_stderr, "r") as f:
+                            stderr_content = f.read()
+
+                        # Log verbose output if requested
+                        if self.verbose:
+                            print(f"HD-BET stdout: {stdout_content[:1000]}")
+                            print(f"HD-BET stderr: {stderr_content[:1000]}")
+
+                        error_msg = stderr_content[:500] if stderr_content else stdout_content[:500]
                         return "error", f"HD-BET failed (code {returncode}): {error_msg}"
 
                 except subprocess.TimeoutExpired:
                     # Kill the process on timeout
                     if os.name != "nt":
+                        # Unix: Kill entire process group
                         try:
                             os.killpg(os.getpgid(process.pid), signal.SIGTERM)
-                            time.sleep(2)
+                            time.sleep(2)  # Give it time to terminate
                             os.killpg(os.getpgid(process.pid), signal.SIGKILL)
-                        except:
-                            process.kill()
+                        except ProcessLookupError:
+                            pass  # Process already dead
                     else:
+                        # Windows: Use terminate/kill
                         process.terminate()
                         time.sleep(2)
-                        process.kill()
+                        try:
+                            process.kill()
+                        except:
+                            pass
+
+                    # Read any output that was produced before timeout
+                    try:
+                        with open(temp_stdout, "r") as f:
+                            stdout_content = f.read()
+                        with open(temp_stderr, "r") as f:
+                            stderr_content = f.read()
+
+                        if self.verbose:
+                            print(f"HD-BET timed out. Stdout: {stdout_content[:500]}")
+                            print(f"HD-BET timed out. Stderr: {stderr_content[:500]}")
+
+                        # Check if models need to be downloaded
+                        if "downloading" in stderr_content.lower() or "downloading" in stdout_content.lower():
+                            return "timeout", f"Timeout after {self.timeout_sec}s (possibly downloading models - try again)"
+                    except:
+                        pass
 
                     return "timeout", f"Timeout after {self.timeout_sec}s"
 
@@ -186,11 +378,106 @@ class HDBETProcessor:
 
         finally:
             # Clean up temporary files
-            temp_stdout.unlink(missing_ok=True)
-            temp_stderr.unlink(missing_ok=True)
-            # Clean up any remaining temp files
+            for temp_file in [temp_stdout, temp_stderr]:
+                try:
+                    temp_file.unlink(missing_ok=True)
+                except:
+                    pass
+
+            # Clean up any remaining HD-BET temp output files
             for temp_file in output_brain.parent.glob(f"temp_{task_id}*"):
-                temp_file.unlink(missing_ok=True)
+                try:
+                    temp_file.unlink()
+                except:
+                    pass
+
+    def _process_with_api(
+        self,
+        input_path: Path,
+        output_brain: Path,
+        output_mask: Path,
+        task_id: Optional[str] = None
+    ) -> Tuple[str, Optional[str]]:
+        """
+        Process using direct Python API import (no subprocess).
+        Best for small files or when subprocess fails.
+        """
+        try:
+            from HD_BET.run import run_hd_bet
+
+            # Ensure output directory exists (thread-safe)
+            with self.dir_lock:
+                output_brain.parent.mkdir(parents=True, exist_ok=True)
+
+            task_id = task_id or f"{time.time()}"
+
+            # HD_BET API expects specific naming
+            temp_output = str(output_brain.parent / f"temp_{task_id}.nii.gz")
+
+            if self.verbose:
+                print(f"Using HD-BET API directly for {input_path.name}")
+
+            # Run HD-BET with timeout using threading
+            result = {"success": False, "error": None}
+
+            def run_hd_bet_thread():
+                try:
+                    # Original HD-BET API signature
+                    run_hd_bet(
+                        input=str(input_path),           # Input file
+                        output=temp_output,              # Output file
+                        mode="accurate" if self.use_tta else "fast",
+                        device=self.device,              # 'cuda' or 'cpu'
+                        tta=self.use_tta,                # Test-time augmentation
+                        save_mask=True,                  # Save mask file
+                        overwrite_existing=True          # Overwrite if exists
+                    )
+                    result["success"] = True
+                except Exception as e:
+                    result["error"] = str(e)
+
+            # Run in thread with timeout
+            thread = threading.Thread(target=run_hd_bet_thread)
+            thread.daemon = True
+            thread.start()
+            thread.join(timeout=self.timeout_sec)
+
+            if thread.is_alive():
+                # Timeout occurred
+                return "timeout", f"API call timeout after {self.timeout_sec}s"
+
+            if not result["success"]:
+                return "error", f"API error: {result['error']}"
+
+            # Move output files
+            hd_bet_brain = Path(temp_output)
+            hd_bet_mask = Path(str(temp_output).replace(".nii.gz", "_bet.nii.gz"))
+
+            if hd_bet_brain.exists():
+                shutil.move(str(hd_bet_brain), str(output_brain))
+            else:
+                return "error", "Brain extraction file not created"
+
+            if hd_bet_mask.exists():
+                shutil.move(str(hd_bet_mask), str(output_mask))
+
+            # Verify output
+            if output_brain.exists():
+                return "success", None
+            else:
+                return "error", "Output file not created"
+
+        except ImportError as e:
+            return "error", f"Failed to import HD_BET: {e}"
+        except Exception as e:
+            return "error", f"API execution failed: {str(e)}"
+        finally:
+            # Clean up any remaining temp files
+            try:
+                for temp_file in output_brain.parent.glob(f"temp_{task_id}*"):
+                    temp_file.unlink(missing_ok=True)
+            except:
+                pass
 
     def process_batch(
         self,
@@ -234,16 +521,24 @@ class HDBETProcessor:
         return results
 
     def cleanup(self) -> None:
-        """Clean up temporary files and kill zombie processes."""
+        """Kill any zombie HD-BET processes and clean up temp directory."""
         # Kill any hanging HD-BET processes
         killed = kill_zombie_processes("hd-bet")
         if killed > 0:
             print(f"Killed {killed} hanging HD-BET processes")
 
         # Clean up temp directory
-        if self.temp_dir.exists():
-            for temp_file in self.temp_dir.glob("hd_bet_*"):
-                try:
-                    temp_file.unlink()
-                except:
-                    pass
+        try:
+            if self.temp_dir.exists():
+                for temp_file in self.temp_dir.glob("hd_bet_*.out"):
+                    try:
+                        temp_file.unlink(missing_ok=True)
+                    except:
+                        pass
+                for temp_file in self.temp_dir.glob("hd_bet_*.err"):
+                    try:
+                        temp_file.unlink(missing_ok=True)
+                    except:
+                        pass
+        except Exception:
+            pass  # Silently fail cleanup

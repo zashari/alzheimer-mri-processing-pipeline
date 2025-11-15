@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import shutil
 import time
 from pathlib import Path
 from typing import Dict, List, Optional, Tuple
@@ -123,6 +124,7 @@ def run_test(cfg: Dict, formatter: NiftiFormatter) -> int:
     device = skull_cfg.get("device", "cuda")
     use_tta = skull_cfg.get("use_tta", False)
     timeout_sec = skull_cfg.get("timeout_sec", 600)
+    execution_method = skull_cfg.get("execution_method", "auto")
     num_samples = test_cfg.get("num_samples", 2)
     save_viz = test_cfg.get("save_visualization", True)
 
@@ -135,8 +137,15 @@ def run_test(cfg: Dict, formatter: NiftiFormatter) -> int:
 
     formatter.header("test", "skull_stripping", device=device, samples=num_samples)
 
-    # Initialize processor
-    processor = HDBETProcessor(device=device, use_tta=use_tta, timeout_sec=timeout_sec)
+    # Initialize processor with test mode and verbose flags
+    processor = HDBETProcessor(
+        device=device,
+        use_tta=use_tta,
+        timeout_sec=timeout_sec,
+        verbose=formatter.verbose,
+        is_test_mode=True,
+        execution_method=execution_method
+    )
 
     # Check HD-BET availability
     hd_bet_available = processor.check_availability()
@@ -170,35 +179,41 @@ def run_test(cfg: Dict, formatter: NiftiFormatter) -> int:
 
     # Process sample files
     results = []
-    for i, input_file in enumerate(sample_files):
-        formatter.console.print(f"\n[blue]Processing file {i+1}/{len(sample_files)}:[/blue] {input_file.name}")
+    with formatter.create_progress_bar() as progress:
+        task = progress.add_task("Processing test files", total=len(sample_files))
 
-        # Create output paths
-        output_brain = test_output / f"test_{i}_brain.nii.gz"
-        output_mask = test_output / f"test_{i}_mask.nii.gz"
+        for i, input_file in enumerate(sample_files):
+            progress.update(task, description=f"Processing {input_file.name}")
 
-        # Process file
-        start_time = time.time()
-        status, error_msg = processor.process_file(
-            input_file, output_brain, output_mask, f"test_{i}"
-        )
-        process_time = time.time() - start_time
+            # Create output paths
+            output_brain = test_output / f"test_{i}_brain.nii.gz"
+            output_mask = test_output / f"test_{i}_mask.nii.gz"
 
-        # Store result
-        result = {
-            "input_file": input_file.name,
-            "success": status == "success",
-            "time": process_time,
-            "brain_file": str(output_brain) if output_brain.exists() else None,
-            "mask_file": str(output_mask) if output_mask.exists() else None,
-            "error": error_msg
-        }
-        results.append(result)
+            # Process file
+            start_time = time.time()
+            status, error_msg = processor.process_file(
+                input_file, output_brain, output_mask, f"test_{i}"
+            )
+            process_time = time.time() - start_time
 
-        if status == "success":
-            formatter.success(f"Completed in {process_time:.1f}s")
-        else:
-            formatter.error(f"Failed: {error_msg}")
+            # Store result
+            result = {
+                "input_file": input_file.name,
+                "success": status == "success",
+                "time": process_time,
+                "brain_file": str(output_brain) if output_brain.exists() else None,
+                "mask_file": str(output_mask) if output_mask.exists() else None,
+                "error": error_msg
+            }
+            results.append(result)
+
+            # Update progress bar
+            progress.update(task, advance=1)
+
+            if status == "success":
+                formatter.success(f"Completed {input_file.name} in {process_time:.1f}s")
+            else:
+                formatter.error(f"Failed {input_file.name}: {error_msg}")
 
     # Show results
     formatter.test_results(results)
@@ -246,6 +261,7 @@ def run_process(cfg: Dict, formatter: NiftiFormatter) -> int:
     device = skull_cfg.get("device", "cuda")
     use_tta = skull_cfg.get("use_tta", False)
     timeout_sec = skull_cfg.get("timeout_sec", 600)
+    execution_method = skull_cfg.get("execution_method", "auto")
     subjects_per_batch = skull_cfg.get("subjects_per_batch", 5)
     enable_gpu_cleanup = skull_cfg.get("enable_gpu_cleanup", True)
     cleanup_wait_time = skull_cfg.get("cleanup_wait_time", 5)
@@ -257,14 +273,37 @@ def run_process(cfg: Dict, formatter: NiftiFormatter) -> int:
     output_dir = output_root / skull_cfg.get("output_dir", "2_skull_stripping")
     output_dir.mkdir(parents=True, exist_ok=True)
 
+    # Clean up test files before processing
+    test_dir = output_dir / "test"
+    if test_dir.exists():
+        # Count files before deletion for reporting
+        test_files = list(test_dir.glob("test_*"))
+        all_files = list(test_dir.glob("*"))
+
+        if test_files or all_files:
+            # Remove the entire test directory and its contents
+            shutil.rmtree(test_dir)
+            formatter.console.print(f"[yellow]🧹 Cleaned up test directory with {len(all_files)} files from previous run[/yellow]")
+        else:
+            # Empty directory, just remove it
+            test_dir.rmdir()
+            formatter.console.print("[yellow]🧹 Removed empty test directory[/yellow]")
+
     formatter.header("process", "skull_stripping", device=device, profile=skull_cfg.get("profile_name", "BALANCED"))
 
     # Setup GPU environment
     if device == "cuda":
         setup_gpu_environment(device)
 
-    # Initialize processor
-    processor = HDBETProcessor(device=device, use_tta=use_tta, timeout_sec=timeout_sec)
+    # Initialize processor with verbose flag
+    processor = HDBETProcessor(
+        device=device,
+        use_tta=use_tta,
+        timeout_sec=timeout_sec,
+        verbose=formatter.verbose,
+        is_test_mode=False,
+        execution_method=execution_method
+    )
 
     # Check HD-BET availability
     hd_bet_available = processor.check_availability()

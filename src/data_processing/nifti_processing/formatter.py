@@ -73,14 +73,11 @@ class NiftiFormatter:
         if gpu_info:
             self.console.print(f"  [green]🎮[/green] GPU: {gpu_info['name']}")
             self.console.print(f"  [green]💾[/green] VRAM: {gpu_info['total_gb']:.1f} GB")
-            self.console.print(
-                f"  [green]📊[/green] Memory: {gpu_info['used_mb']:.1f} MB / {gpu_info['total_mb']:.1f} MB "
-                f"({gpu_info['usage_percent']:.1f}%)"
-            )
         else:
             self.console.print("  [yellow]⚠️[/yellow] GPU not available, using CPU")
 
         self.console.print()
+    
 
     def configuration(self, device: str, profile: str, use_tta: bool,
                      batch_size: int, cleanup_enabled: bool) -> None:

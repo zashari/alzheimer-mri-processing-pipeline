@@ -1,5 +1,5 @@
 [![License](https://img.shields.io/badge/license-MIT-informational)](./LICENSE)
-[![Version](https://img.shields.io/badge/version-1.1.1-blue)](./docs/CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-1.6.0-blue)](./docs/CHANGELOG.md)
 [![Python](https://img.shields.io/badge/python-3.11%2B-blue)](https://www.python.org/downloads/)
 [![Cite](https://img.shields.io/badge/cite-CITATION.cff-blue)](./CITATION.cff)
 [![Status](https://img.shields.io/badge/status-stable-success)](./docs/CHANGELOG.md)
@@ -37,7 +37,7 @@ A **complete, production-ready 3D NIfTI preprocessing pipeline** for ADNI T1-wei
 
 ## ADNI/IDA Compliance Notice
 
-> **Project status:** Stable release. Current version: **v1.1.1**.
+> **Project status:** Stable release. Current version: **v1.6.0**.
 
 > **This project is an independent, open-source effort. It is not affiliated with, endorsed by, or sponsored by the Alzheimer's Disease Neuroimaging Initiative ([ADNI](https://adni.loni.usc.edu/)) or the Imaging Data Archive ([IDA](https://ida.loni.usc.edu/)) operated by the Laboratory of Neuro Imaging ([LONI](https://loni.usc.edu/)). "ADNI" and "IDA-LONI" are trademarks of their respective owners and are used solely to indicate data compatibility.**
 >
@@ -633,7 +633,7 @@ If you use this pipeline in your research, please cite it appropriately. This he
   year         = {2025},
   publisher    = {GitHub},
   howpublished = {\url{https://github.com/zashari/alzheimer-mri-processing-pipeline}},
-  note         = {Version v1.1.1}
+  note         = {Version v1.4.4}
 }
 ```
 

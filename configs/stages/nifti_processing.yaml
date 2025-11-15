@@ -11,6 +11,13 @@ nifti_processing:
     # Device configuration
     device: "cuda"  # Options: "cuda", "cpu", "mps" (Apple Silicon)
 
+    # Execution method for HD-BET (NEW in v1.5.0)
+    execution_method: "auto"  # Options: "auto", "subprocess", "module", "api"
+    # - "auto": Automatically selects best method based on platform
+    # - "subprocess": Force native hd-bet command (best for Unix)
+    # - "module": Force python -m HD_BET (best for Windows)
+    # - "api": Force direct API import (fallback option)
+
     # HD-BET settings
     use_tta: false  # Test-time augmentation (better quality but slower)
     disable_tta: true  # Inverse of use_tta for HD-BET CLI
