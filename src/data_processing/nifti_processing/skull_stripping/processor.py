@@ -56,7 +56,7 @@ class HDBETProcessor:
             # This prevents PyTorch from trying to allocate 11+ GB at once
             # Set both old and new variable names for compatibility
             os.environ["PYTORCH_CUDA_ALLOC_CONF"] = "max_split_size_mb:512"  # Old name (pre-2.2.0)
-            os.environ["PYTORCH_ALLOC_CONF"] = "cuda:max_split_size_mb:512"  # New name (2.2.0+)
+            os.environ["PYTORCH_ALLOC_CONF"] = "max_split_size_mb:512"  # New name (2.2.0+, same format)
 
             # Force synchronous CUDA execution for better memory management
             os.environ["CUDA_LAUNCH_BLOCKING"] = "1"
