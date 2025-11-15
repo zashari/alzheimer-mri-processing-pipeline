@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 - **Simplified HD-BET implementation**: Removed patched fork detection and version-specific handling
   - Now uses original HD-BET arguments exclusively
+  - Removed OS-specific command detection - just uses `hd-bet` command directly (matching notebook reference)
   - Cleaner, more maintainable codebase
   - Better cross-platform compatibility
 

@@ -38,7 +38,6 @@ class HDBETProcessor:
         self.is_test_mode = is_test_mode
         self.execution_method = execution_method
         self._execution_backend = None  # Will be determined in _setup_execution_backend()
-        self._hd_bet_command = "hd-bet"  # Will be updated based on what's available
 
         # Setup temp directory for subprocess output files
         if temp_dir:
@@ -78,34 +77,32 @@ class HDBETProcessor:
     def check_availability(self) -> bool:
         """Check if HD-BET is installed and accessible."""
         try:
-            # On Windows, try different command variants
-            commands_to_try = []
-            if platform.system() == "Windows":
-                commands_to_try = ["hd-bet.cmd", "hd-bet", "hd-bet.py"]
+            # Simple check - just like in the notebook reference
+            result = subprocess.run(
+                ["hd-bet", "--help"],
+                capture_output=True,
+                text=True,
+                timeout=30  # Same timeout as notebook
+            )
+
+            if result.returncode == 0:
+                if self.verbose:
+                    print("✅ HD-BET is available and working!")
+                return True
             else:
-                commands_to_try = ["hd-bet"]
+                if self.verbose:
+                    print("❌ HD-BET command failed")
+                    print(f"Error: {result.stderr}")
+                return False
 
-            for cmd_variant in commands_to_try:
-                try:
-                    result = subprocess.run(
-                        [cmd_variant, "--help"],
-                        stdout=subprocess.PIPE,
-                        stderr=subprocess.PIPE,
-                        text=True,
-                        timeout=60,
-                    )
-
-                    if result.returncode == 0:
-                        self._hd_bet_command = cmd_variant  # Store the working command
-                        if self.verbose:
-                            print(f"✓ HD-BET available ({cmd_variant})")
-                        return True
-                except:
-                    continue
-
-            return False
-
-        except Exception:
+        except subprocess.TimeoutExpired:
+            if self.verbose:
+                print("⚠️  HD-BET check timed out, but continuing anyway...")
+            return True  # Continue anyway, like in notebook
+        except FileNotFoundError:
+            if self.verbose:
+                print("❌ HD-BET not found. Please ensure it's installed:")
+                print("   pip install hd-bet")
             return False
 
     def _setup_execution_backend(self) -> str:
@@ -153,38 +150,17 @@ class HDBETProcessor:
     def _test_native_command(self) -> bool:
         """Test if native hd-bet command is available."""
         try:
-            result = None
-            # On Windows, try different command variants
-            if platform.system() == "Windows":
-                for cmd_variant in ["hd-bet.cmd", "hd-bet", "hd-bet.py"]:
-                    try:
-                        result = subprocess.run(
-                            [cmd_variant, "--help"],
-                            stdout=subprocess.PIPE,
-                            stderr=subprocess.PIPE,
-                            text=True,
-                            timeout=5
-                        )
-                        if result.returncode == 0:
-                            self._hd_bet_command = cmd_variant  # Store the working command
-                            break
-                    except:
-                        continue
-            else:
-                # Unix systems
-                result = subprocess.run(
-                    ["hd-bet", "--help"],
-                    stdout=subprocess.PIPE,
-                    stderr=subprocess.PIPE,
-                    text=True,
-                    timeout=5
-                )
-                self._hd_bet_command = "hd-bet"
+            # Simple test - just use 'hd-bet' like in the notebook
+            result = subprocess.run(
+                ["hd-bet", "--help"],
+                capture_output=True,
+                text=True,
+                timeout=5
+            )
 
-            # Check if we found a working command
-            if result and result.returncode == 0:
+            if result.returncode == 0:
                 if self.verbose:
-                    print(f"Found HD-BET command: {self._hd_bet_command}")
+                    print("Found HD-BET command: hd-bet")
                 return True
             return False
         except (FileNotFoundError, subprocess.TimeoutExpired):
@@ -284,7 +260,7 @@ class HDBETProcessor:
             if self._execution_backend == "subprocess_module":
                 cmd = [sys.executable, "-m", "HD_BET"]
             else:
-                cmd = [self._hd_bet_command]  # Use the detected command variant
+                cmd = ["hd-bet"]  # Simple, just like the notebook
 
             # Add arguments
             cmd.extend([
