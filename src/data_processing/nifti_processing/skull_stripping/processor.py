@@ -32,8 +32,8 @@ class HDBETProcessor:
     ):
         self.device = device
         self.use_tta = use_tta
-        # Increase timeout for test mode (first run may need to load models)
-        self.timeout_sec = 1200 if is_test_mode else timeout_sec
+        # Use standard timeout (600s default)
+        self.timeout_sec = timeout_sec
         self.verbose = verbose
         self.is_test_mode = is_test_mode
         self.execution_method = execution_method
