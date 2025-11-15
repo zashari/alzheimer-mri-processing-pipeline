@@ -28,7 +28,8 @@ class HDBETProcessor:
         temp_dir: Optional[Path] = None,
         verbose: bool = False,
         is_test_mode: bool = False,
-        execution_method: str = "auto"  # New: "auto", "subprocess", "module", "api"
+        execution_method: str = "auto",  # New: "auto", "subprocess", "module", "api"
+        formatter=None  # Optional formatter for consistent output
     ):
         self.device = device
         self.use_tta = use_tta
@@ -38,6 +39,7 @@ class HDBETProcessor:
         self.is_test_mode = is_test_mode
         self.execution_method = execution_method
         self._execution_backend = None  # Will be determined in _setup_execution_backend()
+        self.formatter = formatter  # Store formatter for verbose output
 
         # Setup temp directory for subprocess output files
         if temp_dir:
@@ -502,8 +504,11 @@ class HDBETProcessor:
         }
 
         for i, (input_path, output_brain, output_mask, task_id) in enumerate(tasks):
+            # Notify start of processing
             if progress_callback:
-                progress_callback(i, len(tasks), f"Processing {input_path.name}")
+                progress_callback('start', i, len(tasks),
+                                file_name=input_path.name,
+                                task_id=task_id)
 
             # Process the file
             start_time = time.time()
@@ -512,14 +517,23 @@ class HDBETProcessor:
             )
             process_time = time.time() - start_time
 
-            # Provide immediate feedback if verbose
-            if self.verbose:
+            # Notify completion with status
+            if progress_callback:
+                progress_callback('complete', i, len(tasks),
+                                status=status,
+                                file_name=input_path.name,
+                                process_time=process_time,
+                                error_msg=error_msg)
+
+            # Provide immediate feedback if verbose (using formatter, not print)
+            if self.verbose and hasattr(self, 'formatter'):
                 if status == "success":
-                    print(f"  ✅ {input_path.name} completed in {process_time:.1f}s")
+                    self.formatter.console.print(f"  ✅ {input_path.name} [dim]({process_time:.1f}s)[/dim]")
                 elif status == "skip":
-                    print(f"  ⏭️  {input_path.name} already exists")
+                    self.formatter.console.print(f"  ⏭️  {input_path.name} [dim](already exists)[/dim]")
                 else:
-                    print(f"  ❌ {input_path.name} failed: {error_msg[:50] if error_msg else 'unknown error'}")
+                    error_detail = error_msg[:50] if error_msg else 'unknown error'
+                    self.formatter.console.print(f"  ❌ {input_path.name} [dim]({error_detail})[/dim]")
 
             if status == "success":
                 results["success"].append((input_path, output_brain, output_mask))

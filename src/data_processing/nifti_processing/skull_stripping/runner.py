@@ -302,7 +302,8 @@ def run_process(cfg: Dict, formatter: NiftiFormatter) -> int:
         timeout_sec=timeout_sec,
         verbose=formatter.verbose,
         is_test_mode=False,
-        execution_method=execution_method
+        execution_method=execution_method,
+        formatter=formatter  # Pass formatter for consistent output
     )
 
     # Check HD-BET availability
@@ -324,9 +325,8 @@ def run_process(cfg: Dict, formatter: NiftiFormatter) -> int:
         use_tta, subjects_per_batch, enable_gpu_cleanup
     )
 
-    # Check existing progress
+    # Check existing progress (but don't display to avoid long output)
     completed_files, completed_subjects, breakdown = check_existing_progress(output_dir, required_visits)
-    formatter.existing_progress(completed_files, completed_subjects, breakdown)
 
     # Build task list
     tasks_to_process, tasks_to_skip, missing_files = build_task_list(
@@ -345,11 +345,16 @@ def run_process(cfg: Dict, formatter: NiftiFormatter) -> int:
     all_success = []
     all_failed = []
     all_errors = []
+    all_skipped = []
     batch_num = 0
-    total_processed = 0  # Track total files processed across all batches
+
+    # Initialize counters for real-time tracking
+    current_success = 0
+    current_failed = 0
+    current_skipped = len(tasks_to_skip)  # Pre-existing skips
 
     with formatter.create_progress_bar() as progress:
-        task = progress.add_task("Processing files", total=len(tasks_to_process))
+        task = progress.add_task("[cyan]Initializing...[/cyan]", total=len(tasks_to_process))
 
         for i in range(0, len(tasks_to_process), subjects_per_batch):
             batch_num += 1
@@ -361,31 +366,42 @@ def run_process(cfg: Dict, formatter: NiftiFormatter) -> int:
                 for t in batch
             ]
 
-            # Process batch with proper progress tracking
-            def progress_callback(current, total, description):
-                # Update with actual file being processed
-                progress.update(task, advance=1, description=description)
-                # Track overall progress
-                nonlocal total_processed
-                total_processed += 1
+            # Enhanced callback with real-time updates
+            def progress_callback(event, current_idx, total, **kwargs):
+                nonlocal current_success, current_failed, current_skipped
+
+                if event == 'start':
+                    # Show current file being processed
+                    file_name = kwargs.get('file_name', 'Unknown')
+                    progress.update(task,
+                        description=f"Processing {file_name}")
+
+                elif event == 'complete':
+                    # Update counters based on status
+                    status = kwargs.get('status')
+                    if status == 'success':
+                        current_success += 1
+                    elif status == 'skip':
+                        current_skipped += 1
+                    else:
+                        current_failed += 1
+
+                    # Advance progress bar
+                    progress.update(task, advance=1)
+
+                    # Update description with live statistics
+                    stats_text = (f"[green]{current_success} done[/green] | "
+                                 f"[yellow]{current_skipped} skipped[/yellow] | "
+                                 f"[red]{current_failed} failed[/red]")
+                    progress.update(task, description=stats_text)
 
             batch_results = processor.process_batch(processor_tasks, progress_callback)
 
-            # Track results
+            # Track results for final summary
             all_success.extend(batch_results["success"])
             all_failed.extend(batch_results["failed"])
             all_errors.extend(batch_results["errors"])
-
-            # Show real-time statistics update after each batch
-            current_success = len(all_success)
-            current_failed = len(all_failed)
-            current_skipped = len(tasks_to_skip) + sum(1 for r in batch_results.get("skipped", []))
-
-            # Update progress bar with current statistics
-            progress.update(task,
-                description=f"[green]{current_success} done[/green] | "
-                           f"[yellow]{current_skipped} skipped[/yellow] | "
-                           f"[red]{current_failed} failed[/red]")
+            all_skipped.extend(batch_results.get("skipped", []))
 
             # Show batch results
             formatter.batch_results(

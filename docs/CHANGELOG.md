@@ -5,6 +5,27 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.6.2] - 2025-11-15
+
+### Fixed
+- **Critical progress tracking bug**: Completely redesigned progress tracking system
+  - Progress bar now advances AFTER file completion, not before
+  - Real-time statistics update after EACH file, not just after batches
+  - Fixed incorrect batch index usage (was using 0,1,2... instead of overall count)
+  - Dual-event callback system: 'start' event shows current file, 'complete' event updates progress
+
+### Removed
+- **EXISTING PROGRESS section**: Removed from output to prevent extremely long displays
+  - This section could potentially list thousands of files
+  - Removed to keep terminal output clean and focused
+
+### Improved
+- **Real-time progress accuracy**: Complete overhaul of progress tracking
+  - Statistics (X done | Y skipped | Z failed) update instantly after each file
+  - Progress percentage now accurately reflects actual completion
+  - Verbose mode shows per-file results with timing using Rich console (not print)
+  - Progress bar shows current file being processed in real-time
+
 ## [1.6.1] - 2025-11-15
 
 ### Fixed
