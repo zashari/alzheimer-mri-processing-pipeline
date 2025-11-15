@@ -5,6 +5,21 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.6.4] - 2025-11-15
+
+### Improved
+- **Cleaner terminal output**: Reduced clutter for better readability
+  - Batch results only show in verbose mode or when there are failures
+  - GPU cleanup messages only show in verbose mode
+  - Focus on essential progress information
+
+### Added
+- **Average processing time display**: Shows time metrics in progress bar
+  - Initial estimate: "~3 min/file" before processing starts
+  - After first file: Shows actual time (e.g., "2.3 min/file")
+  - After multiple files: Shows running average
+  - Format: "6/1914 files | Processing filename.nii | Avg: 2.3 min/file"
+
 ## [1.6.3] - 2025-11-15
 
 ### Improved

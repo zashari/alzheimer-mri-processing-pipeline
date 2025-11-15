@@ -355,6 +355,11 @@ def run_process(cfg: Dict, formatter: NiftiFormatter) -> int:
     total_files = len(tasks_to_process)
     files_processed = 0
 
+    # Time tracking for average calculation
+    import time
+    file_processing_times = []
+    avg_time_str = "~3 min/file"  # Initial estimate
+
     with formatter.create_progress_bar() as progress:
         task = progress.add_task("[cyan]Initializing...[/cyan]", total=total_files)
 
@@ -370,16 +375,32 @@ def run_process(cfg: Dict, formatter: NiftiFormatter) -> int:
 
             # Enhanced callback with real-time updates
             def progress_callback(event, current_idx, total, **kwargs):
-                nonlocal current_success, current_failed, current_skipped
+                nonlocal current_success, current_failed, current_skipped, avg_time_str
 
                 if event == 'start':
-                    # Show current file being processed with file counter
+                    # Show current file being processed with file counter and average time
                     file_name = kwargs.get('file_name', 'Unknown')
                     current_file_num = files_processed + current_idx + 1
                     progress.update(task,
-                        description=f"[dim]{current_file_num}/{total_files} files[/dim] | Processing {file_name}")
+                        description=f"[dim]{current_file_num}/{total_files} files[/dim] | Processing {file_name} | Avg: {avg_time_str}")
 
                 elif event == 'complete':
+                    # Track processing time
+                    process_time = kwargs.get('process_time', 0)
+                    if process_time > 0:
+                        file_processing_times.append(process_time)
+
+                        # Calculate average time
+                        if len(file_processing_times) == 1:
+                            # First file - show actual time
+                            avg_time_minutes = process_time / 60.0
+                            avg_time_str = f"{avg_time_minutes:.1f} min/file"
+                        else:
+                            # Multiple files - show average
+                            avg_seconds = sum(file_processing_times) / len(file_processing_times)
+                            avg_time_minutes = avg_seconds / 60.0
+                            avg_time_str = f"{avg_time_minutes:.1f} min/file"
+
                     # Update counters based on status
                     status = kwargs.get('status')
                     if status == 'success':
@@ -392,10 +413,13 @@ def run_process(cfg: Dict, formatter: NiftiFormatter) -> int:
                     # Advance progress bar
                     progress.update(task, advance=1)
 
-                    # Update description with live statistics
-                    stats_text = (f"[green]{current_success} done[/green] | "
+                    # Update description with live statistics and average time
+                    current_file_num = files_processed + current_idx + 1
+                    stats_text = (f"[dim]{current_file_num}/{total_files} files[/dim] | "
+                                 f"[green]{current_success} done[/green] | "
                                  f"[yellow]{current_skipped} skipped[/yellow] | "
-                                 f"[red]{current_failed} failed[/red]")
+                                 f"[red]{current_failed} failed[/red] | "
+                                 f"Avg: {avg_time_str}")
                     progress.update(task, description=stats_text)
 
             batch_results = processor.process_batch(processor_tasks, progress_callback)

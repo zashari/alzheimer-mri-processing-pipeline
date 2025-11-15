@@ -151,7 +151,8 @@ class NiftiFormatter:
 
     def gpu_cleanup(self, before_mb: float, after_mb: float, freed_mb: float) -> None:
         """Print GPU cleanup results."""
-        if self.json_only or self.quiet:
+        # Only show in verbose mode or if json_only/quiet
+        if self.json_only or self.quiet or not self.verbose:
             return
 
         self.console.print("\n[blue]🧹 GPU MEMORY CLEANUP[/blue]")
@@ -164,7 +165,12 @@ class NiftiFormatter:
     def batch_results(self, batch_num: int, success: int, skipped: int,
                       failed: int, errors: List[str]) -> None:
         """Print batch processing results."""
+        # Only show in verbose mode or if there are failures/errors
         if self.json_only:
+            return
+
+        # Always show if there are failures, otherwise only in verbose mode
+        if not self.verbose and failed == 0:
             return
 
         self.console.print(f"\n[blue]Batch {batch_num} Results:[/blue]")
