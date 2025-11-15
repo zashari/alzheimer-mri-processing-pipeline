@@ -251,13 +251,23 @@ def setup_gpu_environment(device: str = "cuda") -> None:
         device: Device type (cuda, cpu, mps)
     """
     if device == "cuda":
-        # Only set environment variables if we're using CUDA
+        # Critical: Limit PyTorch CUDA memory allocation to smaller chunks
+        # This prevents PyTorch from trying to allocate 11+ GB at once
+        os.environ["PYTORCH_CUDA_ALLOC_CONF"] = "max_split_size_mb:512"
+
         # Force synchronous CUDA operations for better error tracking
         os.environ["CUDA_LAUNCH_BLOCKING"] = "1"
-        # Optimize memory allocation
-        os.environ["PYTORCH_CUDA_ALLOC_CONF"] = "max_split_size_mb:512"
+
         # Use only first GPU if multiple available
         os.environ["CUDA_VISIBLE_DEVICES"] = "0"
+
+        # Additional settings for Windows to prevent multiprocessing issues
+        if platform.system() == "Windows":
+            os.environ["OMP_NUM_THREADS"] = "1"
+            os.environ["MKL_NUM_THREADS"] = "1"
+            os.environ["NUMEXPR_NUM_THREADS"] = "1"
+            os.environ["OPENBLAS_NUM_THREADS"] = "1"
+            os.environ["TORCH_NUM_THREADS"] = "1"
 
 
 class GPUMonitor:

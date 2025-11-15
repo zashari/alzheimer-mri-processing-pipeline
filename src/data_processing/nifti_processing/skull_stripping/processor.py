@@ -38,7 +38,6 @@ class HDBETProcessor:
         self.is_test_mode = is_test_mode
         self.execution_method = execution_method
         self._execution_backend = None  # Will be determined in _setup_execution_backend()
-        self._hd_bet_fork_version = False  # Will be detected when checking availability
         self._hd_bet_command = "hd-bet"  # Will be updated based on what's available
 
         # Setup temp directory for subprocess output files
@@ -49,13 +48,35 @@ class HDBETProcessor:
         self.temp_dir.mkdir(parents=True, exist_ok=True)
         self.dir_lock = threading.Lock()  # Thread-safe directory creation
 
+        # Setup CUDA memory management environment variables globally
+        # This is CRITICAL for preventing GPU OOM errors on GPUs with limited VRAM
+        if device == "cuda" and platform.system() == "Windows":
+            # Limit PyTorch CUDA memory allocation to smaller chunks
+            # This prevents PyTorch from trying to allocate 11+ GB at once
+            os.environ["PYTORCH_CUDA_ALLOC_CONF"] = "max_split_size_mb:512"
+
+            # Force synchronous CUDA execution for better memory management
+            os.environ["CUDA_LAUNCH_BLOCKING"] = "1"
+
+            # Limit CPU threads to prevent Windows multiprocessing issues
+            os.environ["OMP_NUM_THREADS"] = "1"
+            os.environ["MKL_NUM_THREADS"] = "1"
+            os.environ["NUMEXPR_NUM_THREADS"] = "1"
+            os.environ["OPENBLAS_NUM_THREADS"] = "1"
+            os.environ["TORCH_NUM_THREADS"] = "1"
+
+            if self.verbose:
+                print("Windows CUDA detected: Set global memory management environment variables")
+                print(f"  PYTORCH_CUDA_ALLOC_CONF = {os.environ.get('PYTORCH_CUDA_ALLOC_CONF')}")
+                print(f"  CUDA_LAUNCH_BLOCKING = {os.environ.get('CUDA_LAUNCH_BLOCKING')}")
+
         # Check if HD-BET models are downloaded
         hd_bet_home = Path.home() / ".hd-bet"
         if not hd_bet_home.exists() and self.verbose:
             print("Note: HD-BET models may need to be downloaded on first run (this can take time)")
 
     def check_availability(self) -> bool:
-        """Check if HD-BET is installed and accessible, and detect version."""
+        """Check if HD-BET is installed and accessible."""
         try:
             # On Windows, try different command variants
             commands_to_try = []
@@ -76,16 +97,8 @@ class HDBETProcessor:
 
                     if result.returncode == 0:
                         self._hd_bet_command = cmd_variant  # Store the working command
-                        # Detect fork version from help text
-                        help_text = result.stdout + result.stderr
-                        if "-tta" in help_text and "-mode" in help_text:
-                            self._hd_bet_fork_version = True
-                            if self.verbose:
-                                print(f"✓ Using patched HD-BET fork ({cmd_variant}) with Windows fixes")
-                        else:
-                            self._hd_bet_fork_version = False
-                            if self.verbose:
-                                print(f"✓ Using original HD-BET version ({cmd_variant})")
+                        if self.verbose:
+                            print(f"✓ HD-BET available ({cmd_variant})")
                         return True
                 except:
                     continue
@@ -138,12 +151,11 @@ class HDBETProcessor:
         return "subprocess_native"
 
     def _test_native_command(self) -> bool:
-        """Test if native hd-bet command is available and detect version."""
+        """Test if native hd-bet command is available."""
         try:
             result = None
             # On Windows, try different command variants
             if platform.system() == "Windows":
-                # Try hd-bet.cmd first (patched fork on Windows)
                 for cmd_variant in ["hd-bet.cmd", "hd-bet", "hd-bet.py"]:
                     try:
                         result = subprocess.run(
@@ -171,16 +183,8 @@ class HDBETProcessor:
 
             # Check if we found a working command
             if result and result.returncode == 0:
-                # Check if it's the patched fork by looking for -tta in help
-                help_text = result.stdout + result.stderr
-                if "-tta" in help_text and "-mode" in help_text:
-                    self._hd_bet_fork_version = True
-                    if self.verbose:
-                        print(f"Detected patched HD-BET fork ({self._hd_bet_command})")
-                else:
-                    self._hd_bet_fork_version = False
-                    if self.verbose:
-                        print(f"Detected original HD-BET version ({self._hd_bet_command})")
+                if self.verbose:
+                    print(f"Found HD-BET command: {self._hd_bet_command}")
                 return True
             return False
         except (FileNotFoundError, subprocess.TimeoutExpired):
@@ -288,59 +292,18 @@ class HDBETProcessor:
                 "-o", str(temp_output.absolute())
             ])
 
-            # Handle device parameter - fork expects int (0,1,2...) or 'cpu'
-            if self.device == "cuda":
-                cmd.extend(["-device", "0"])  # Default to GPU 0 for cuda
-            elif self.device == "cpu":
-                cmd.extend(["-device", "cpu"])
-            elif self.device.isdigit():
-                cmd.extend(["-device", self.device])  # Already a number
-            else:
-                # Assume it's a GPU index like "cuda:0" or "cuda:1"
-                if ":" in self.device:
-                    gpu_id = self.device.split(":")[-1]
-                    cmd.extend(["-device", gpu_id])
-                else:
-                    cmd.extend(["-device", "0"])  # Default to GPU 0
+            # Handle device parameter - original HD-BET expects 'cuda' or 'cpu'
+            cmd.extend(["-device", self.device])
 
-            # Add version-specific arguments
-            if self._hd_bet_fork_version:
-                # Patched fork format (sh-shahrokhi version)
-                # Add mode for better performance
-                cmd.extend(["-mode", "accurate" if self.use_tta else "fast"])
-                # TTA flag: -tta 1 (enable) or -tta 0 (disable)
-                cmd.extend(["-tta", "1" if self.use_tta else "0"])
-                # Save mask: -s 1 (save) or -s 0 (don't save)
-                cmd.extend(["-s", "1"])
-                # Enable postprocessing
-                cmd.extend(["-pp", "1"])
-            else:
-                # Original HD-BET format
-                if not self.use_tta:
-                    cmd.append("--disable_tta")
-                cmd.append("--save_bet_mask")
+            # Add arguments for original HD-BET
+            if not self.use_tta:
+                cmd.append("--disable_tta")
+            cmd.append("--save_bet_mask")
 
             # Log command if verbose
             if self.verbose:
                 backend_name = "module" if self._execution_backend == "subprocess_module" else "native"
                 print(f"Running HD-BET ({backend_name}): {' '.join(cmd)}")
-
-            # Setup environment for Windows to prevent multiprocessing deadlocks
-            env = os.environ.copy()
-            if platform.system() == "Windows":
-                # Force single-threading to prevent Windows multiprocessing issues
-                env["OMP_NUM_THREADS"] = "1"
-                env["MKL_NUM_THREADS"] = "1"
-                env["NUMEXPR_NUM_THREADS"] = "1"
-                env["OPENBLAS_NUM_THREADS"] = "1"
-                # Additional threading controls
-                env["CUDA_LAUNCH_BLOCKING"] = "1"  # Force synchronous CUDA execution
-                env["PYTORCH_CUDA_ALLOC_CONF"] = "max_split_size_mb:512"
-                # Disable multiprocessing in PyTorch
-                env["TORCH_NUM_THREADS"] = "1"
-                if self.verbose:
-                    print("Windows detected: Using single-threaded execution to prevent deadlocks")
-                    print(f"Command to execute: {' '.join(cmd)}")
 
             # Run HD-BET with file-based output handling to avoid pipe buffer issues
             with open(temp_stdout, "w") as fout, open(temp_stderr, "w") as ferr:
@@ -348,7 +311,6 @@ class HDBETProcessor:
                     cmd,
                     stdout=fout,
                     stderr=ferr,
-                    env=env,  # Pass the environment with Windows fixes
                     cwd=str(Path.cwd()),  # Explicitly set working directory
                     # Prevent process from hanging on to resources
                     close_fds=(os.name != 'nt'),  # close_fds=True not supported on Windows
@@ -484,16 +446,15 @@ class HDBETProcessor:
 
             def run_hd_bet_thread():
                 try:
-                    # The patched fork API signature from run.py
+                    # Original HD-BET API signature
                     run_hd_bet(
-                        mri_fnames=str(input_path),     # First positional arg
-                        output_fnames=temp_output,      # Second positional arg
+                        input=str(input_path),           # Input file
+                        output=temp_output,              # Output file
                         mode="accurate" if self.use_tta else "fast",
-                        device=self.device if self.device != "cuda" else 0,  # int or 'cpu'
-                        do_tta=self.use_tta,             # Boolean is fine
-                        keep_mask=True,                  # Keep the mask file
-                        overwrite=True,                  # Overwrite existing
-                        postprocess=True                 # Remove small components
+                        device=self.device,              # 'cuda' or 'cpu'
+                        tta=self.use_tta,                # Test-time augmentation
+                        save_mask=True,                  # Save mask file
+                        overwrite_existing=True          # Overwrite if exists
                     )
                     result["success"] = True
                 except Exception as e:

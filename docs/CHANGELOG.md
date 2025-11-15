@@ -5,6 +5,31 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.6.0] - 2025-11-15
+
+### Changed
+- **Simplified HD-BET implementation**: Removed patched fork detection and version-specific handling
+  - Now uses original HD-BET arguments exclusively
+  - Cleaner, more maintainable codebase
+  - Better cross-platform compatibility
+
+### Fixed
+- **CRITICAL FIX: GPU Out of Memory errors on Windows**
+  - Environment variables for CUDA memory management are now set **globally** in the parent process
+  - This ensures all child processes inherit the memory settings
+  - `PYTORCH_CUDA_ALLOC_CONF=max_split_size_mb:512` prevents PyTorch from allocating 11+ GB at once
+  - Fixes GPU OOM errors on GPUs with 8GB or less VRAM (e.g., RTX 4070 Laptop)
+
+### Technical Details
+- The root cause was that environment variables set only in subprocess environment weren't inherited by HD-BET's child processes
+- Setting them globally in the parent process ensures proper propagation to all child processes
+- This is the same approach that works in Jupyter notebooks, which is why notebooks worked but direct execution failed
+
+### Recommendations
+- **All Users**: The fix is automatic - HD-BET will now work on GPUs with limited VRAM
+- **Windows Users**: Environment variables are set automatically when using CUDA device
+- **Linux/Mac Users**: The fix also applies but is less critical as Linux handles memory better
+
 ## [1.5.4] - 2025-11-15
 
 ### Added
