@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import shutil
 import time
 from pathlib import Path
 from typing import Dict, List, Optional, Tuple
@@ -271,6 +272,22 @@ def run_process(cfg: Dict, formatter: NiftiFormatter) -> int:
     input_dir = output_root / skull_cfg.get("input_dir", "1_splitted_sequential")
     output_dir = output_root / skull_cfg.get("output_dir", "2_skull_stripping")
     output_dir.mkdir(parents=True, exist_ok=True)
+
+    # Clean up test files before processing
+    test_dir = output_dir / "test"
+    if test_dir.exists():
+        # Count files before deletion for reporting
+        test_files = list(test_dir.glob("test_*"))
+        all_files = list(test_dir.glob("*"))
+
+        if test_files or all_files:
+            # Remove the entire test directory and its contents
+            shutil.rmtree(test_dir)
+            formatter.console.print(f"[yellow]🧹 Cleaned up test directory with {len(all_files)} files from previous run[/yellow]")
+        else:
+            # Empty directory, just remove it
+            test_dir.rmdir()
+            formatter.console.print("[yellow]🧹 Removed empty test directory[/yellow]")
 
     formatter.header("process", "skull_stripping", device=device, profile=skull_cfg.get("profile_name", "BALANCED"))
 
