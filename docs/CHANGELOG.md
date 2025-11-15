@@ -5,6 +5,33 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.5.4] - 2025-11-15
+
+### Added
+- **Enhanced Windows GPU hanging prevention**
+  - Added CUDA_LAUNCH_BLOCKING=1 to force synchronous GPU execution
+  - Added PYTORCH_CUDA_ALLOC_CONF for memory management
+  - Added TORCH_NUM_THREADS=1 for additional threading control
+  - More verbose debug output showing exact command being executed
+
+### Known Issues & Workarounds
+- **Windows GPU Processing**: HD-BET may still hang on Windows with GPU despite all fixes
+  - **Workaround**: Use CPU mode by setting `device: "cpu"` in nifti_processing.yaml
+  - The patched fork appears to have deep Windows GPU compatibility issues
+  - CPU mode is slower but reliable on Windows
+  - Alternative: Use WSL2 for better GPU compatibility
+
+### Recommendations
+- **Windows Users**:
+  1. Try GPU mode first with latest fixes
+  2. If hanging persists after 1-2 minutes, kill process and switch to CPU:
+     ```yaml
+     skull_stripping:
+       device: "cpu"  # Change from "cuda" to "cpu"
+     ```
+  3. Consider using WSL2 for native Linux GPU support
+- **Linux/Mac Users**: Use GPU mode normally
+
 ## [1.5.3] - 2025-11-15
 
 ### Fixed

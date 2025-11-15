@@ -333,8 +333,14 @@ class HDBETProcessor:
                 env["MKL_NUM_THREADS"] = "1"
                 env["NUMEXPR_NUM_THREADS"] = "1"
                 env["OPENBLAS_NUM_THREADS"] = "1"
+                # Additional threading controls
+                env["CUDA_LAUNCH_BLOCKING"] = "1"  # Force synchronous CUDA execution
+                env["PYTORCH_CUDA_ALLOC_CONF"] = "max_split_size_mb:512"
+                # Disable multiprocessing in PyTorch
+                env["TORCH_NUM_THREADS"] = "1"
                 if self.verbose:
                     print("Windows detected: Using single-threaded execution to prevent deadlocks")
+                    print(f"Command to execute: {' '.join(cmd)}")
 
             # Run HD-BET with file-based output handling to avoid pipe buffer issues
             with open(temp_stdout, "w") as fout, open(temp_stderr, "w") as ferr:
