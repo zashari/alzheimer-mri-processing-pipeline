@@ -253,7 +253,9 @@ def setup_gpu_environment(device: str = "cuda") -> None:
     if device == "cuda":
         # Critical: Limit PyTorch CUDA memory allocation to smaller chunks
         # This prevents PyTorch from trying to allocate 11+ GB at once
-        os.environ["PYTORCH_CUDA_ALLOC_CONF"] = "max_split_size_mb:512"
+        # Set both old and new variable names for compatibility with different PyTorch versions
+        os.environ["PYTORCH_CUDA_ALLOC_CONF"] = "max_split_size_mb:512"  # Old name (pre-2.2.0)
+        os.environ["PYTORCH_ALLOC_CONF"] = "cuda:max_split_size_mb:512"  # New name (2.2.0+)
 
         # Force synchronous CUDA operations for better error tracking
         os.environ["CUDA_LAUNCH_BLOCKING"] = "1"

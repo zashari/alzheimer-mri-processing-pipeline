@@ -54,7 +54,9 @@ class HDBETProcessor:
         if device == "cuda" and platform.system() == "Windows":
             # Limit PyTorch CUDA memory allocation to smaller chunks
             # This prevents PyTorch from trying to allocate 11+ GB at once
-            os.environ["PYTORCH_CUDA_ALLOC_CONF"] = "max_split_size_mb:512"
+            # Set both old and new variable names for compatibility
+            os.environ["PYTORCH_CUDA_ALLOC_CONF"] = "max_split_size_mb:512"  # Old name (pre-2.2.0)
+            os.environ["PYTORCH_ALLOC_CONF"] = "cuda:max_split_size_mb:512"  # New name (2.2.0+)
 
             # Force synchronous CUDA execution for better memory management
             os.environ["CUDA_LAUNCH_BLOCKING"] = "1"
@@ -68,7 +70,8 @@ class HDBETProcessor:
 
             if self.verbose:
                 print("Windows CUDA detected: Set global memory management environment variables")
-                print(f"  PYTORCH_CUDA_ALLOC_CONF = {os.environ.get('PYTORCH_CUDA_ALLOC_CONF')}")
+                print(f"  PYTORCH_ALLOC_CONF = {os.environ.get('PYTORCH_ALLOC_CONF')}")
+                print(f"  PYTORCH_CUDA_ALLOC_CONF = {os.environ.get('PYTORCH_CUDA_ALLOC_CONF')} (legacy)")
                 print(f"  CUDA_LAUNCH_BLOCKING = {os.environ.get('CUDA_LAUNCH_BLOCKING')}")
 
         # Check if HD-BET models are downloaded
