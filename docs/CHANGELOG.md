@@ -5,6 +5,25 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.6.1] - 2025-11-15
+
+### Fixed
+- **Progress display accuracy**: Fixed progress bar and statistics not updating correctly
+  - Progress bar now properly increments for each file processed
+  - Real-time statistics show current success/skip/fail counts
+  - Per-file feedback in verbose mode shows completion status immediately
+
+### Removed
+- **Misleading Profile display**: Removed "Profile: BALANCED" from output
+  - The profile setting was displayed but not actually implemented
+  - Removed to avoid user confusion until properly implemented
+
+### Improved
+- **Real-time feedback**: Enhanced user feedback during processing
+  - Progress bar shows running statistics: "X done | Y skipped | Z failed"
+  - Immediate per-file feedback when verbose mode is enabled
+  - Batch statistics remain for summary information
+
 ## [1.6.0] - 2025-11-15
 
 ### Changed

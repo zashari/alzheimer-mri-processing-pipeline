@@ -505,9 +505,21 @@ class HDBETProcessor:
             if progress_callback:
                 progress_callback(i, len(tasks), f"Processing {input_path.name}")
 
+            # Process the file
+            start_time = time.time()
             status, error_msg = self.process_file(
                 input_path, output_brain, output_mask, task_id
             )
+            process_time = time.time() - start_time
+
+            # Provide immediate feedback if verbose
+            if self.verbose:
+                if status == "success":
+                    print(f"  ✅ {input_path.name} completed in {process_time:.1f}s")
+                elif status == "skip":
+                    print(f"  ⏭️  {input_path.name} already exists")
+                else:
+                    print(f"  ❌ {input_path.name} failed: {error_msg[:50] if error_msg else 'unknown error'}")
 
             if status == "success":
                 results["success"].append((input_path, output_brain, output_mask))

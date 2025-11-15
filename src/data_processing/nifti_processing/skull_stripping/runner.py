@@ -289,7 +289,7 @@ def run_process(cfg: Dict, formatter: NiftiFormatter) -> int:
             test_dir.rmdir()
             formatter.console.print("[yellow]🧹 Removed empty test directory[/yellow]")
 
-    formatter.header("process", "skull_stripping", device=device, profile=skull_cfg.get("profile_name", "BALANCED"))
+    formatter.header("process", "skull_stripping", device=device)
 
     # Setup GPU environment
     if device == "cuda":
@@ -320,7 +320,7 @@ def run_process(cfg: Dict, formatter: NiftiFormatter) -> int:
 
     # Show configuration
     formatter.configuration(
-        device, skull_cfg.get("profile_name", "BALANCED"),
+        device, None,  # Profile not implemented yet
         use_tta, subjects_per_batch, enable_gpu_cleanup
     )
 
@@ -346,6 +346,7 @@ def run_process(cfg: Dict, formatter: NiftiFormatter) -> int:
     all_failed = []
     all_errors = []
     batch_num = 0
+    total_processed = 0  # Track total files processed across all batches
 
     with formatter.create_progress_bar() as progress:
         task = progress.add_task("Processing files", total=len(tasks_to_process))
@@ -360,9 +361,13 @@ def run_process(cfg: Dict, formatter: NiftiFormatter) -> int:
                 for t in batch
             ]
 
-            # Process batch
+            # Process batch with proper progress tracking
             def progress_callback(current, total, description):
+                # Update with actual file being processed
                 progress.update(task, advance=1, description=description)
+                # Track overall progress
+                nonlocal total_processed
+                total_processed += 1
 
             batch_results = processor.process_batch(processor_tasks, progress_callback)
 
@@ -370,6 +375,17 @@ def run_process(cfg: Dict, formatter: NiftiFormatter) -> int:
             all_success.extend(batch_results["success"])
             all_failed.extend(batch_results["failed"])
             all_errors.extend(batch_results["errors"])
+
+            # Show real-time statistics update after each batch
+            current_success = len(all_success)
+            current_failed = len(all_failed)
+            current_skipped = len(tasks_to_skip) + sum(1 for r in batch_results.get("skipped", []))
+
+            # Update progress bar with current statistics
+            progress.update(task,
+                description=f"[green]{current_success} done[/green] | "
+                           f"[yellow]{current_skipped} skipped[/yellow] | "
+                           f"[red]{current_failed} failed[/red]")
 
             # Show batch results
             formatter.batch_results(

@@ -86,7 +86,9 @@ class NiftiFormatter:
             return
 
         self.console.print("[blue]⚙️  CONFIGURATION[/blue]")
-        self.console.print(f"  • Profile: {profile}")
+        # Only show profile if it's actually implemented
+        if profile:
+            self.console.print(f"  • Profile: {profile}")
         self.console.print(f"  • Device: {device.upper()}")
         self.console.print(f"  • Test-Time Augmentation: {'Enabled' if use_tta else 'Disabled'}")
 
