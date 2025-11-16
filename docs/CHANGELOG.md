@@ -5,6 +5,15 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.6.8] - 2025-11-16
+
+### Improved
+- **Template registration test isolation**: Test outputs now use temp_test directory
+  - Test action outputs to `outputs/3_optimal_slices/temp_test/` instead of main directories
+  - Process action automatically cleans up temp_test directory before starting
+  - Aligned with skull_stripping pattern for consistent test/process workflow
+  - Prevents test data from mixing with actual processed data
+
 ## [1.6.7] - 2025-11-16
 
 ### Fixed

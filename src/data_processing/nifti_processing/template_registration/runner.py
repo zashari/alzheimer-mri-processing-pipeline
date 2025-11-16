@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import shutil
 import time
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from pathlib import Path
@@ -110,15 +111,19 @@ def run_test(cfg: Dict, formatter: NiftiFormatter) -> int:
     split, subject, visit, brain_path = test_task
     formatter.info(f"Testing on: [{split}] {subject}_{visit}")
 
-    # Prepare output paths
+    # Prepare output paths - use temp_test directory for test action
     output_base = output_root / reg_cfg["output_dir"]
-    brain_slices = {}
+    test_output = output_base / "temp_test"
+    test_output.mkdir(parents=True, exist_ok=True)
 
+    brain_slices = {}
     for plane in ['axial', 'sagittal', 'coronal']:
-        plane_dir = output_base / reg_cfg["plane_dirs"][plane] / split / subject
+        plane_dir = test_output / plane
+        plane_dir.mkdir(parents=True, exist_ok=True)
         brain_slices[plane] = plane_dir / f"{subject}_{visit}_optimal_{plane}_x0.nii.gz"
 
-    mask_3d_dir = output_base / reg_cfg["hippo_3d_dir"] / split / subject
+    mask_3d_dir = test_output / "hippocampus_masks_3D"
+    mask_3d_dir.mkdir(parents=True, exist_ok=True)
     mask_3d_path = mask_3d_dir / f"{subject}_{visit}_hippocampus_3D.nii.gz"
 
     # Process subject
@@ -187,6 +192,23 @@ def run_process(cfg: Dict, formatter: NiftiFormatter) -> int:
     # Get configuration
     reg_cfg = cfg.get("nifti_processing", {}).get("template_registration", {})
     output_root = Path(cfg.get("output_root", "outputs"))
+
+    # Clean up test files before processing
+    output_dir = output_root / reg_cfg["output_dir"]
+    test_dir = output_dir / "temp_test"
+    if test_dir.exists():
+        # Count files before deletion for reporting
+        test_files = list(test_dir.glob("**/*"))
+        file_count = sum(1 for f in test_files if f.is_file())
+
+        if test_files:
+            # Remove the entire test directory and its contents
+            shutil.rmtree(test_dir)
+            formatter.console.print(f"[yellow]🧹 Cleaned up temp_test directory with {file_count} files from previous test run[/yellow]")
+        else:
+            # Empty directory, just remove it
+            test_dir.rmdir()
+            formatter.console.print("[yellow]🧹 Removed empty temp_test directory[/yellow]")
 
     # Get template paths
     project_root = Path.cwd()
