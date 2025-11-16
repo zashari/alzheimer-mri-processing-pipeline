@@ -37,9 +37,8 @@ def run(action: str, cfg: Dict) -> int:
 
     # Print header
     formatter.header(
-        "NIfTI Processing",
-        action=action.title(),
-        substage="template_registration"
+        action,
+        "template_registration"
     )
 
     # Setup environment
