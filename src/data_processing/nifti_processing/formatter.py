@@ -86,7 +86,9 @@ class NiftiFormatter:
             return
 
         self.console.print("[blue]⚙️  CONFIGURATION[/blue]")
-        self.console.print(f"  • Profile: {profile}")
+        # Only show profile if it's actually implemented
+        if profile:
+            self.console.print(f"  • Profile: {profile}")
         self.console.print(f"  • Device: {device.upper()}")
         self.console.print(f"  • Test-Time Augmentation: {'Enabled' if use_tta else 'Disabled'}")
 
@@ -142,14 +144,15 @@ class NiftiFormatter:
             SpinnerColumn(),
             TextColumn("[progress.description]{task.description}"),
             BarColumn(),
-            TextColumn("[progress.percentage]{task.percentage:>3.0f}%"),
+            TextColumn("[progress.percentage]{task.percentage:>5.1f}%"),
             TimeRemainingColumn(),
             console=self.console
         )
 
     def gpu_cleanup(self, before_mb: float, after_mb: float, freed_mb: float) -> None:
         """Print GPU cleanup results."""
-        if self.json_only or self.quiet:
+        # Only show in verbose mode or if json_only/quiet
+        if self.json_only or self.quiet or not self.verbose:
             return
 
         self.console.print("\n[blue]🧹 GPU MEMORY CLEANUP[/blue]")
@@ -162,7 +165,12 @@ class NiftiFormatter:
     def batch_results(self, batch_num: int, success: int, skipped: int,
                       failed: int, errors: List[str]) -> None:
         """Print batch processing results."""
+        # Only show in verbose mode or if there are failures/errors
         if self.json_only:
+            return
+
+        # Always show if there are failures, otherwise only in verbose mode
+        if not self.verbose and failed == 0:
             return
 
         self.console.print(f"\n[blue]Batch {batch_num} Results:[/blue]")

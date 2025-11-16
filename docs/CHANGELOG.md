@@ -5,6 +5,80 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.6.5] - 2025-11-15
+
+### Fixed
+- **PyTorch deprecation warning**: Updated CUDA memory configuration
+  - Now sets both PYTORCH_CUDA_ALLOC_CONF (legacy) and PYTORCH_ALLOC_CONF (new)
+  - Maintains compatibility with PyTorch versions before and after 2.2.0
+  - Eliminates deprecation warning while preserving GPU OOM prevention
+
+## [1.6.4] - 2025-11-15
+
+### Improved
+- **Cleaner terminal output**: Reduced clutter for better readability
+  - Batch results only show in verbose mode or when there are failures
+  - GPU cleanup messages only show in verbose mode
+  - Focus on essential progress information
+
+### Added
+- **Average processing time display**: Shows time metrics in progress bar
+  - Initial estimate: "~3 min/file" before processing starts
+  - After first file: Shows actual time (e.g., "2.3 min/file")
+  - After multiple files: Shows running average
+  - Format: "6/1914 files | Processing filename.nii | Avg: 2.3 min/file"
+
+## [1.6.3] - 2025-11-15
+
+### Improved
+- **Progress display enhancements**: Simple, safe improvements to progress tracking
+  - Shows decimal percentages (0.1% instead of 0%) for better visibility
+  - Displays file counter: "1/1914 files | Processing filename.nii"
+  - Users can now see progress even with large file counts
+
+### Fixed
+- No breaking changes - maintained all working functionality from v1.6.2
+
+## [1.6.2] - 2025-11-15
+
+### Fixed
+- **Critical progress tracking bug**: Completely redesigned progress tracking system
+  - Progress bar now advances AFTER file completion, not before
+  - Real-time statistics update after EACH file, not just after batches
+  - Fixed incorrect batch index usage (was using 0,1,2... instead of overall count)
+  - Dual-event callback system: 'start' event shows current file, 'complete' event updates progress
+
+### Removed
+- **EXISTING PROGRESS section**: Removed from output to prevent extremely long displays
+  - This section could potentially list thousands of files
+  - Removed to keep terminal output clean and focused
+
+### Improved
+- **Real-time progress accuracy**: Complete overhaul of progress tracking
+  - Statistics (X done | Y skipped | Z failed) update instantly after each file
+  - Progress percentage now accurately reflects actual completion
+  - Verbose mode shows per-file results with timing using Rich console (not print)
+  - Progress bar shows current file being processed in real-time
+
+## [1.6.1] - 2025-11-15
+
+### Fixed
+- **Progress display accuracy**: Fixed progress bar and statistics not updating correctly
+  - Progress bar now properly increments for each file processed
+  - Real-time statistics show current success/skip/fail counts
+  - Per-file feedback in verbose mode shows completion status immediately
+
+### Removed
+- **Misleading Profile display**: Removed "Profile: BALANCED" from output
+  - The profile setting was displayed but not actually implemented
+  - Removed to avoid user confusion until properly implemented
+
+### Improved
+- **Real-time feedback**: Enhanced user feedback during processing
+  - Progress bar shows running statistics: "X done | Y skipped | Z failed"
+  - Immediate per-file feedback when verbose mode is enabled
+  - Batch statistics remain for summary information
+
 ## [1.6.0] - 2025-11-15
 
 ### Changed

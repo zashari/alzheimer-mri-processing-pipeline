@@ -28,7 +28,8 @@ class HDBETProcessor:
         temp_dir: Optional[Path] = None,
         verbose: bool = False,
         is_test_mode: bool = False,
-        execution_method: str = "auto"  # New: "auto", "subprocess", "module", "api"
+        execution_method: str = "auto",  # New: "auto", "subprocess", "module", "api"
+        formatter=None  # Optional formatter for consistent output
     ):
         self.device = device
         self.use_tta = use_tta
@@ -38,6 +39,7 @@ class HDBETProcessor:
         self.is_test_mode = is_test_mode
         self.execution_method = execution_method
         self._execution_backend = None  # Will be determined in _setup_execution_backend()
+        self.formatter = formatter  # Store formatter for verbose output
 
         # Setup temp directory for subprocess output files
         if temp_dir:
@@ -52,7 +54,9 @@ class HDBETProcessor:
         if device == "cuda" and platform.system() == "Windows":
             # Limit PyTorch CUDA memory allocation to smaller chunks
             # This prevents PyTorch from trying to allocate 11+ GB at once
-            os.environ["PYTORCH_CUDA_ALLOC_CONF"] = "max_split_size_mb:512"
+            # Set both old and new variable names for compatibility
+            os.environ["PYTORCH_CUDA_ALLOC_CONF"] = "max_split_size_mb:512"  # Old name (pre-2.2.0)
+            os.environ["PYTORCH_ALLOC_CONF"] = "max_split_size_mb:512"  # New name (2.2.0+, same format)
 
             # Force synchronous CUDA execution for better memory management
             os.environ["CUDA_LAUNCH_BLOCKING"] = "1"
@@ -66,7 +70,8 @@ class HDBETProcessor:
 
             if self.verbose:
                 print("Windows CUDA detected: Set global memory management environment variables")
-                print(f"  PYTORCH_CUDA_ALLOC_CONF = {os.environ.get('PYTORCH_CUDA_ALLOC_CONF')}")
+                print(f"  PYTORCH_ALLOC_CONF = {os.environ.get('PYTORCH_ALLOC_CONF')}")
+                print(f"  PYTORCH_CUDA_ALLOC_CONF = {os.environ.get('PYTORCH_CUDA_ALLOC_CONF')} (legacy)")
                 print(f"  CUDA_LAUNCH_BLOCKING = {os.environ.get('CUDA_LAUNCH_BLOCKING')}")
 
         # Check if HD-BET models are downloaded
@@ -502,12 +507,36 @@ class HDBETProcessor:
         }
 
         for i, (input_path, output_brain, output_mask, task_id) in enumerate(tasks):
+            # Notify start of processing
             if progress_callback:
-                progress_callback(i, len(tasks), f"Processing {input_path.name}")
+                progress_callback('start', i, len(tasks),
+                                file_name=input_path.name,
+                                task_id=task_id)
 
+            # Process the file
+            start_time = time.time()
             status, error_msg = self.process_file(
                 input_path, output_brain, output_mask, task_id
             )
+            process_time = time.time() - start_time
+
+            # Notify completion with status
+            if progress_callback:
+                progress_callback('complete', i, len(tasks),
+                                status=status,
+                                file_name=input_path.name,
+                                process_time=process_time,
+                                error_msg=error_msg)
+
+            # Provide immediate feedback if verbose (using formatter, not print)
+            if self.verbose and hasattr(self, 'formatter'):
+                if status == "success":
+                    self.formatter.console.print(f"  ✅ {input_path.name} [dim]({process_time:.1f}s)[/dim]")
+                elif status == "skip":
+                    self.formatter.console.print(f"  ⏭️  {input_path.name} [dim](already exists)[/dim]")
+                else:
+                    error_detail = error_msg[:50] if error_msg else 'unknown error'
+                    self.formatter.console.print(f"  ❌ {input_path.name} [dim]({error_detail})[/dim]")
 
             if status == "success":
                 results["success"].append((input_path, output_brain, output_mask))
