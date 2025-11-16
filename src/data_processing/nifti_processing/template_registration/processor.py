@@ -108,8 +108,7 @@ class RegistrationProcessor:
             'slices': {},
             'hippo_mask_3d': None,
             'hippo_volume': 0,
-            'processing_time': 0,
-            'registration_quality': None
+            'processing_time': 0
         }
 
         start_time = time.time()
@@ -148,13 +147,6 @@ class RegistrationProcessor:
             inverse_transforms = registration['invtransforms']
             temp_files.extend(forward_transforms)
             temp_files.extend(inverse_transforms)
-
-            # Calculate registration quality (optional)
-            if 'warpedfixout' in registration:
-                warped = registration['warpedfixout']
-                result['registration_quality'] = float(
-                    ants.image_similarity(mni_template, warped, metric_type='MI')
-                )
 
             # Warp hippocampus ROI from MNI to subject space
             hippo_in_subject = ants.apply_transforms(

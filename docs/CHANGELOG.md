@@ -5,6 +5,14 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.6.7] - 2025-11-16
+
+### Fixed
+- **Template registration ANTs metric error**: Removed registration quality calculation
+  - Eliminated ants.image_similarity() call that was using invalid 'MI' metric type
+  - Aligned implementation with reference notebook which doesn't calculate registration quality
+  - Template registration now completes successfully without metric_type errors
+
 ## [1.6.6] - 2025-11-16
 
 ### Fixed
