@@ -5,6 +5,17 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.6.11] - 2025-11-16
+
+### Fixed
+- **Template registration formatter.print() TypeError**: Fixed missing argument error
+  - Changed `formatter.print()` calls to `formatter.console.print()` for blank lines
+  - Fixed in template_registration runner (1 occurrence)
+  - Fixed in labelling runner (2 occurrences)
+  - Fixed in twoD_conversion runner (2 occurrences)
+  - Prevents TypeError when printing blank lines in processing summary sections
+  - Aligned with formatter class internal pattern for blank line printing
+
 ## [1.6.10] - 2025-11-16
 
 ### Improved

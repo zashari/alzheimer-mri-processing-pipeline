@@ -331,7 +331,7 @@ def run_process(cfg: Dict, formatter: NiftiFormatter) -> int:
 
     # Calculate statistics
     total_time = time.time() - start_time
-    formatter.print()
+    formatter.console.print()
     formatter.info("Processing Complete")
     formatter.print(f"  Success: {stats['success']} files")
     formatter.print(f"  Skipped: {stats['skip']} files")
