@@ -5,6 +5,15 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.6.9] - 2025-11-16
+
+### Fixed
+- **Template registration progress bar error**: Fixed AttributeError in process action
+  - Corrected `formatter.progress()` calls to use `formatter.create_progress_bar()` method
+  - Fixed in both `process_parallel()` and `process_sequential()` functions
+  - Template registration process action now works correctly without AttributeError
+  - Aligned implementation with other substages (skull_stripping, labelling) that use correct method
+
 ## [1.6.8] - 2025-11-16
 
 ### Improved

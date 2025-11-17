@@ -144,6 +144,19 @@ def run_test(cfg: Dict, formatter: NiftiFormatter) -> int:
         for plane, info in result['slices'].items():
             formatter.print(f"  • {plane}: slice {info['slice_idx']} (area: {info['hippo_area']:.0f})")
 
+        # Rename slice files with actual indices for proper visualization
+        # This ensures the visualization can extract correct slice indices from filenames
+        for plane, info in result.get('slices', {}).items():
+            if 'slice_idx' in info and 'output_path' in info:
+                old_path = Path(info['output_path'])
+                new_path = old_path.parent / f"{subject}_{visit}_optimal_{plane}_x{info['slice_idx']}.nii.gz"
+
+                if old_path.exists() and old_path != new_path:
+                    old_path.rename(new_path)
+                    # Update the brain_slices dict for visualization
+                    brain_slices[plane] = new_path
+                    info['output_path'] = str(new_path)
+
         # Create visualization if requested
         if test_cfg.get("save_visualization", True):
             viz_cfg = reg_cfg.get("visualization", {})
@@ -520,7 +533,7 @@ def process_parallel(
     results = []
     completed = set(progress.get('completed', []))
 
-    with formatter.progress() as pbar:
+    with formatter.create_progress_bar() as pbar:
         task_id = pbar.add_task("Processing", total=len(tasks))
 
         with ThreadPoolExecutor(max_workers=max_workers) as executor:
@@ -591,7 +604,7 @@ def process_sequential(
     results = []
     completed = set(progress.get('completed', []))
 
-    with formatter.progress() as pbar:
+    with formatter.create_progress_bar() as pbar:
         task_id = pbar.add_task("Processing", total=len(tasks))
 
         for task in tasks:
