@@ -198,7 +198,10 @@ def create_batch_visualization(
 
 def _extract_slice_index(filepath: Path) -> Optional[int]:
     """Extract slice index from filename."""
-    filename = filepath.stem  # Remove extension
+    # Remove all extensions (.nii.gz -> remove both .nii and .gz)
+    filename = filepath.name
+    for suffix in filepath.suffixes:
+        filename = filename[:-len(suffix)]
 
     # Look for pattern _x{number}
     parts = filename.split('_x')

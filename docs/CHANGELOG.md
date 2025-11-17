@@ -5,6 +5,17 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.6.12] - 2025-11-17
+
+### Fixed
+- **Template registration visualization slice index extraction**: Fixed slice index parsing from filenames
+  - Corrected `_extract_slice_index()` to properly handle `.nii.gz` file extensions
+  - Previously used `Path.stem` which only removes last extension, leaving `.nii` in filename
+  - Now removes all extensions before parsing slice index pattern `_x{number}`
+  - Fixes "Slice None" labels in visualization titles
+  - Enables hippocampus overlay display (overlay was skipped when slice_idx was None)
+  - Visualizations now correctly show slice indices and hippocampus overlays
+
 ## [1.6.11] - 2025-11-16
 
 ### Fixed
