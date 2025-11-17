@@ -5,6 +5,20 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.6.10] - 2025-11-16
+
+### Improved
+- **Template registration progress bar**: Enhanced progress display to match skull_stripping style
+  - Progress bar now shows: `{current}/{total} files | Processing {filename} | Avg: {time}`
+  - Removed individual completion messages that cluttered terminal output
+  - Added dynamic average time calculation:
+    * Initial: `~3 min/file`
+    * After 1st file: keeps `~3 min/file`
+    * After 2nd file: shows 2nd file's actual time
+    * After 3rd+: shows running average of all processed files
+  - Individual error messages now only shown in verbose mode
+  - Cleaner terminal output for large batch processing (1914+ files)
+
 ## [1.6.9] - 2025-11-16
 
 ### Fixed

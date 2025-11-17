@@ -532,9 +532,27 @@ def process_parallel(
     """Process tasks in parallel."""
     results = []
     completed = set(progress.get('completed', []))
+    
+    # Time tracking for average calculation
+    file_processing_times = []
+    avg_time_str = "~3 min/file"
+    processed_count = 0
+    total_files = len(tasks)
+
+    def _process_with_timing(task_tuple):
+        """Wrapper to add timing to process_single_subject."""
+        import time
+        start_time = time.time()
+        result = process_single_subject(task_tuple, processor, reg_cfg, output_root)
+        process_time = time.time() - start_time
+        result['process_time'] = process_time
+        return result
 
     with formatter.create_progress_bar() as pbar:
-        task_id = pbar.add_task("Processing", total=len(tasks))
+        task_id = pbar.add_task(
+            f"[dim]0/{total_files} files[/dim] | Processing... | Avg: {avg_time_str}",
+            total=len(tasks)
+        )
 
         with ThreadPoolExecutor(max_workers=max_workers) as executor:
             futures = {}
@@ -545,36 +563,63 @@ def process_parallel(
 
                 if key in completed:
                     stats['skip'] += 1
+                    processed_count += 1
                     pbar.update(task_id, advance=1)
+                    pbar.update(task_id, description=f"[dim]{processed_count}/{total_files} files[/dim] | Processing... | Avg: {avg_time_str}")
                     continue
 
-                future = executor.submit(
-                    process_single_subject,
-                    task, processor, reg_cfg, output_root
-                )
+                future = executor.submit(_process_with_timing, task)
                 futures[future] = task
 
             for future in as_completed(futures):
                 task = futures[future]
-                split, subject, visit, _ = task
+                split, subject, visit, brain_path = task
                 key = f"{split}_{subject}_{visit}"
+                file_name = f"{subject}_{visit}.nii.gz"
 
                 try:
                     result = future.result(timeout=1200)  # 20 min timeout
                     results.append(result)
+                    processed_count += 1
 
                     if result['status'] == 'success':
                         stats['success'] += 1
                         completed.add(key)
-                        formatter.print(f"  ✓ {subject}_{visit}: {len(result.get('slices', {}))} slices, "
-                                      f"volume: {result.get('hippo_volume', 0):.0f}")
+                        
+                        # Track processing time and calculate average
+                        process_time = result.get('process_time', 0)
+                        if process_time > 0:
+                            file_processing_times.append(process_time)
+                            
+                            # Calculate average according to logic:
+                            # - Initial: ~3 min/file
+                            # - After 1st file: keep ~3 min/file
+                            # - After 2nd file: show 2nd file's actual time
+                            # - After 3rd+: show running average
+                            if len(file_processing_times) == 1:
+                                # After 1st file: keep ~3 min/file
+                                avg_time_str = "~3 min/file"
+                            elif len(file_processing_times) == 2:
+                                # After 2nd file: show 2nd file's actual time
+                                avg_time_minutes = process_time / 60.0
+                                avg_time_str = f"{avg_time_minutes:.1f} min/file"
+                            else:
+                                # After 3rd+: show running average
+                                avg_seconds = sum(file_processing_times) / len(file_processing_times)
+                                avg_time_minutes = avg_seconds / 60.0
+                                avg_time_str = f"{avg_time_minutes:.1f} min/file"
                     else:
                         stats['error'] += 1
-                        formatter.warning(f"  ✗ {subject}_{visit}: {result.get('error', 'Unknown')}")
+                        # Only show errors in verbose mode
+                        if formatter.verbose:
+                            formatter.warning(f"  ✗ {subject}_{visit}: {result.get('error', 'Unknown')}")
 
                 except Exception as e:
                     stats['error'] += 1
-                    formatter.warning(f"  ✗ {subject}_{visit}: {str(e)}")
+                    processed_count += 1
+                    # Only show errors in verbose mode
+                    if formatter.verbose:
+                        formatter.warning(f"  ✗ {subject}_{visit}: {str(e)}")
                     results.append({
                         'subject': subject,
                         'visit': visit,
@@ -582,7 +627,11 @@ def process_parallel(
                         'error': str(e)
                     })
 
-                pbar.update(task_id, advance=1)
+                # Update progress bar with current stats
+                stats_text = (f"[dim]{processed_count}/{total_files} files[/dim] | "
+                             f"Processing {file_name} | "
+                             f"Avg: {avg_time_str}")
+                pbar.update(task_id, advance=1, description=stats_text)
 
                 # Save progress periodically
                 if len(results) % 10 == 0:
@@ -603,31 +652,77 @@ def process_sequential(
     """Process tasks sequentially."""
     results = []
     completed = set(progress.get('completed', []))
+    
+    # Time tracking for average calculation
+    file_processing_times = []
+    avg_time_str = "~3 min/file"
+    processed_count = 0
+    total_files = len(tasks)
 
     with formatter.create_progress_bar() as pbar:
-        task_id = pbar.add_task("Processing", total=len(tasks))
+        task_id = pbar.add_task(
+            f"[dim]0/{total_files} files[/dim] | Processing... | Avg: {avg_time_str}",
+            total=len(tasks)
+        )
 
         for task in tasks:
             split, subject, visit, brain_path = task
             key = f"{split}_{subject}_{visit}"
+            file_name = f"{subject}_{visit}.nii.gz"
 
             if key in completed:
                 stats['skip'] += 1
+                processed_count += 1
                 pbar.update(task_id, advance=1)
+                pbar.update(task_id, description=f"[dim]{processed_count}/{total_files} files[/dim] | Processing... | Avg: {avg_time_str}")
                 continue
 
+            # Process with timing
+            import time
+            start_time = time.time()
             result = process_single_subject(task, processor, reg_cfg, output_root)
+            process_time = time.time() - start_time
+            result['process_time'] = process_time
+            
             results.append(result)
+            processed_count += 1
 
             if result['status'] == 'success':
                 stats['success'] += 1
                 completed.add(key)
-                formatter.print(f"  ✓ {subject}_{visit}: {len(result.get('slices', {}))} slices")
+                
+                # Track processing time and calculate average
+                if process_time > 0:
+                    file_processing_times.append(process_time)
+                    
+                    # Calculate average according to logic:
+                    # - Initial: ~3 min/file
+                    # - After 1st file: keep ~3 min/file
+                    # - After 2nd file: show 2nd file's actual time
+                    # - After 3rd+: show running average
+                    if len(file_processing_times) == 1:
+                        # After 1st file: keep ~3 min/file
+                        avg_time_str = "~3 min/file"
+                    elif len(file_processing_times) == 2:
+                        # After 2nd file: show 2nd file's actual time
+                        avg_time_minutes = process_time / 60.0
+                        avg_time_str = f"{avg_time_minutes:.1f} min/file"
+                    else:
+                        # After 3rd+: show running average
+                        avg_seconds = sum(file_processing_times) / len(file_processing_times)
+                        avg_time_minutes = avg_seconds / 60.0
+                        avg_time_str = f"{avg_time_minutes:.1f} min/file"
             else:
                 stats['error'] += 1
-                formatter.warning(f"  ✗ {subject}_{visit}: {result.get('error', 'Unknown')}")
+                # Only show errors in verbose mode
+                if formatter.verbose:
+                    formatter.warning(f"  ✗ {subject}_{visit}: {result.get('error', 'Unknown')}")
 
-            pbar.update(task_id, advance=1)
+            # Update progress bar with current stats
+            stats_text = (f"[dim]{processed_count}/{total_files} files[/dim] | "
+                         f"Processing {file_name} | "
+                         f"Avg: {avg_time_str}")
+            pbar.update(task_id, advance=1, description=stats_text)
 
             # Save progress periodically
             if len(results) % 10 == 0:
