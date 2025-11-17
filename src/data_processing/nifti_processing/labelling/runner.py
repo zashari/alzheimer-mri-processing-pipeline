@@ -295,7 +295,7 @@ def run_process(cfg: Dict, formatter: NiftiFormatter) -> int:
     processing_time = time.time() - start_time
 
     # Show results summary
-    formatter.print()
+    formatter.console.print()
     formatter.info("Processing Complete")
 
     # Overall statistics
@@ -328,7 +328,7 @@ def run_process(cfg: Dict, formatter: NiftiFormatter) -> int:
             formatter.print(f"  Empty files will be removed")
 
     # Show detailed breakdown by slice type
-    formatter.print()
+    formatter.console.print()
     formatter.info("File Distribution by Slice Type, Split, and Group")
     for slice_type in enabled_slice_types:
         result = all_results[slice_type]

@@ -5,6 +5,76 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.6.12] - 2025-11-17
+
+### Fixed
+- **Template registration visualization slice index extraction**: Fixed slice index parsing from filenames
+  - Corrected `_extract_slice_index()` to properly handle `.nii.gz` file extensions
+  - Previously used `Path.stem` which only removes last extension, leaving `.nii` in filename
+  - Now removes all extensions before parsing slice index pattern `_x{number}`
+  - Fixes "Slice None" labels in visualization titles
+  - Enables hippocampus overlay display (overlay was skipped when slice_idx was None)
+  - Visualizations now correctly show slice indices and hippocampus overlays
+
+## [1.6.11] - 2025-11-16
+
+### Fixed
+- **Template registration formatter.print() TypeError**: Fixed missing argument error
+  - Changed `formatter.print()` calls to `formatter.console.print()` for blank lines
+  - Fixed in template_registration runner (1 occurrence)
+  - Fixed in labelling runner (2 occurrences)
+  - Fixed in twoD_conversion runner (2 occurrences)
+  - Prevents TypeError when printing blank lines in processing summary sections
+  - Aligned with formatter class internal pattern for blank line printing
+
+## [1.6.10] - 2025-11-16
+
+### Improved
+- **Template registration progress bar**: Enhanced progress display to match skull_stripping style
+  - Progress bar now shows: `{current}/{total} files | Processing {filename} | Avg: {time}`
+  - Removed individual completion messages that cluttered terminal output
+  - Added dynamic average time calculation:
+    * Initial: `~3 min/file`
+    * After 1st file: keeps `~3 min/file`
+    * After 2nd file: shows 2nd file's actual time
+    * After 3rd+: shows running average of all processed files
+  - Individual error messages now only shown in verbose mode
+  - Cleaner terminal output for large batch processing (1914+ files)
+
+## [1.6.9] - 2025-11-16
+
+### Fixed
+- **Template registration progress bar error**: Fixed AttributeError in process action
+  - Corrected `formatter.progress()` calls to use `formatter.create_progress_bar()` method
+  - Fixed in both `process_parallel()` and `process_sequential()` functions
+  - Template registration process action now works correctly without AttributeError
+  - Aligned implementation with other substages (skull_stripping, labelling) that use correct method
+
+## [1.6.8] - 2025-11-16
+
+### Improved
+- **Template registration test isolation**: Test outputs now use temp_test directory
+  - Test action outputs to `outputs/3_optimal_slices/temp_test/` instead of main directories
+  - Process action automatically cleans up temp_test directory before starting
+  - Aligned with skull_stripping pattern for consistent test/process workflow
+  - Prevents test data from mixing with actual processed data
+
+## [1.6.7] - 2025-11-16
+
+### Fixed
+- **Template registration ANTs metric error**: Removed registration quality calculation
+  - Eliminated ants.image_similarity() call that was using invalid 'MI' metric type
+  - Aligned implementation with reference notebook which doesn't calculate registration quality
+  - Template registration now completes successfully without metric_type errors
+
+## [1.6.6] - 2025-11-16
+
+### Fixed
+- **Template registration header call**: Fixed incorrect formatter.header() argument order
+  - Corrected positional argument mismatch that caused TypeError
+  - Template registration substage now works correctly for both test and process actions
+  - Aligned implementation with other substages (skull_stripping, labelling, twoD_conversion)
+
 ## [1.6.5] - 2025-11-15
 
 ### Fixed
