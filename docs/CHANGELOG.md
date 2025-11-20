@@ -5,6 +5,15 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.6.13] - 2025-11-20
+
+### Fixed
+- **Labelling stage metadata CSV path**: Fixed incorrect metadata CSV path in labelling configuration
+  - Changed `metadata_csv` path from `"1_splitted_sequential/metadata_split.csv"` to `"manifests/metadata_split.csv"`
+  - The metadata CSV file is created by data_preparation stage in `outputs/manifests/` directory
+  - Labelling stage now correctly locates the metadata CSV file
+  - Fixes "Metadata CSV not found" error when running labelling stage
+
 ## [1.6.12] - 2025-11-17
 
 ### Fixed

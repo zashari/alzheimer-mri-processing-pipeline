@@ -120,7 +120,7 @@ nifti_processing:
     output_dir: "4_labelling"  # Where to save labelled files
 
     # Metadata configuration
-    metadata_csv: "1_splitted_sequential/metadata_split.csv"  # Relative to output_root
+    metadata_csv: "manifests/metadata_split.csv"  # Relative to output_root
 
     # Required visits for complete sequences
     required_visits: ["sc", "m06", "m12"]
