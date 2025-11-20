@@ -5,6 +5,55 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.7.1] - 2025-11-20
+
+### Fixed
+- **TwoD conversion visualization TypeError**: Fixed `TypeError: 'int' object is not iterable` in visualization code
+  - Removed redundant outer `sum()` call that was trying to iterate over an integer
+  - The inner `sum()` already correctly calculates the total PNG count across all groups
+  - Visualization now works correctly with MCI group support
+  - Fixes crash when generating overall summary plot for multiple slice types
+- **TwoD conversion visualization AttributeError**: Fixed `AttributeError: 'int' object has no attribute 'values'` in subjects calculation
+  - Fixed incorrect assumption that `group_data` was a dictionary when it's actually an integer
+  - Changed from `sum(group_data.values())` to directly summing the integer counts
+  - Subjects count now correctly calculated across all splits and groups
+  - Visualization completes successfully without errors
+
+## [1.7.0] - 2025-11-20
+
+### Added
+- **MCI group support across all processing stages**: Added MCI (Mild Cognitive Impairment) group support throughout the pipeline
+  - **NIfTI processing stages**: Updated `groups` configuration to include `["AD", "CN", "MCI"]` in labelling and twoD_conversion stages
+  - **Image processing stages**: Updated `groups` configuration to include `["AD", "CN", "MCI"]` in center_crop, image_enhancement, and data_balancing stages
+  - **Data balancing**: Added MCI to `augmentation_targets` configuration with default target of 180 subjects
+  - Updated default fallback values in all code files to include MCI
+  - Updated docstrings to reflect MCI support
+  - MCI subjects are now processed and included in all output splits throughout the pipeline
+  - Fixes "Unknown groups" warnings for MCI subjects (310 MCI subjects now fully processed)
+
+## [1.6.14] - 2025-11-20
+
+### Fixed
+- **Labelling stage JSON report truncation**: Fixed JSON serialization error causing truncated reports
+  - Converted tuple keys in statistics dictionary to strings before JSON serialization
+  - Tuple keys like `("train", "AD")` are now converted to `"train_AD"` format
+  - JSON reports now save completely without truncation
+  - Fixes incomplete JSON report files in `.reports/` directory
+
+## [1.6.13] - 2025-11-20
+
+### Fixed
+- **Labelling stage metadata CSV path**: Fixed incorrect metadata CSV path in labelling configuration
+  - Changed `metadata_csv` path from `"1_splitted_sequential/metadata_split.csv"` to `"manifests/metadata_split.csv"`
+  - The metadata CSV file is created by data_preparation stage in `outputs/manifests/` directory
+  - Labelling stage now correctly locates the metadata CSV file
+  - Fixes "Metadata CSV not found" error when running labelling stage
+- **Labelling stage JSON report truncation**: Fixed JSON serialization error causing truncated reports
+  - Converted tuple keys in statistics dictionary to strings before JSON serialization
+  - Tuple keys like `("train", "AD")` are now converted to `"train_AD"` format
+  - JSON reports now save completely without truncation
+  - Fixes incomplete JSON report files in `.reports/` directory
+
 ## [1.6.12] - 2025-11-17
 
 ### Fixed

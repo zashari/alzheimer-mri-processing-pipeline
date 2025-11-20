@@ -67,7 +67,7 @@ def run_test(cfg: Dict, formatter: ImageProcessingFormatter) -> int:
     num_wolves = enh_cfg.get("num_wolves", 10)
     slice_types = enh_cfg.get("slice_types", ["axial", "coronal", "sagittal"])
     splits = enh_cfg.get("splits", ["train", "val", "test"])
-    groups = enh_cfg.get("groups", ["AD", "CN"])
+    groups = enh_cfg.get("groups", ["AD", "CN", "MCI"])
     required_visits = enh_cfg.get("required_visits", ["sc", "m06", "m12"])
     seed = cfg.get("seed", 42)
 
@@ -227,7 +227,7 @@ def run_process(cfg: Dict, formatter: ImageProcessingFormatter) -> int:
     max_workers = enh_cfg.get("max_workers", 4)
     slice_types = enh_cfg.get("slice_types", ["axial", "coronal", "sagittal"])
     splits = enh_cfg.get("splits", ["train", "val", "test"])
-    groups = enh_cfg.get("groups", ["AD", "CN"])
+    groups = enh_cfg.get("groups", ["AD", "CN", "MCI"])
     required_visits = enh_cfg.get("required_visits", ["sc", "m06", "m12"])
     max_images_per_class = enh_cfg.get("max_images_per_class", None)
     seed = cfg.get("seed", 42)

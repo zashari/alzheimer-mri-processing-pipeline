@@ -12,6 +12,18 @@ from .processor import LabellingProcessor
 from .visualize import create_visualizations
 
 
+def convert_stats_for_json(stats_dict):
+    """Convert tuple keys to strings for JSON serialization."""
+    converted = {}
+    for key, value in stats_dict.items():
+        if isinstance(key, tuple):
+            # Convert tuple key like ("train", "AD") to string "train_AD"
+            converted["_".join(str(k) for k in key)] = value
+        else:
+            converted[str(key)] = value
+    return converted
+
+
 def run(action: str, cfg: Dict) -> int:
     """
     Main runner for labelling substage.
@@ -64,7 +76,7 @@ def run_test(cfg: Dict, formatter: NiftiFormatter) -> int:
     processor = LabellingProcessor(
         metadata_csv=metadata_csv,
         required_visits=label_cfg.get("required_visits", ["sc", "m06", "m12"]),
-        groups=label_cfg.get("groups", ["AD", "CN"]),
+        groups=label_cfg.get("groups", ["AD", "CN", "MCI"]),
         splits=label_cfg.get("splits", ["train", "val", "test"]),
         duplicate_strategy=label_cfg.get("duplicate_strategy", "largest"),
         remove_empty_files=label_cfg.get("remove_empty_files", True),
@@ -159,7 +171,7 @@ def run_test(cfg: Dict, formatter: NiftiFormatter) -> int:
     formatter.report_data.update({
         "test_results": {
             slice_type: {
-                "stats": r["stats"],
+                "stats": convert_stats_for_json(r["stats"]),
                 "unmatched": len(r["unmatched_subjects"]),
                 "unknown_groups": len(r["unknown_groups"])
             }
@@ -191,7 +203,7 @@ def run_process(cfg: Dict, formatter: NiftiFormatter) -> int:
     processor = LabellingProcessor(
         metadata_csv=metadata_csv,
         required_visits=label_cfg.get("required_visits", ["sc", "m06", "m12"]),
-        groups=label_cfg.get("groups", ["AD", "CN"]),
+        groups=label_cfg.get("groups", ["AD", "CN", "MCI"]),
         splits=label_cfg.get("splits", ["train", "val", "test"]),
         duplicate_strategy=label_cfg.get("duplicate_strategy", "largest"),
         remove_empty_files=label_cfg.get("remove_empty_files", True),
@@ -370,7 +382,7 @@ def run_process(cfg: Dict, formatter: NiftiFormatter) -> int:
             "processing_time_minutes": round(processing_time / 60, 1),
             "by_slice_type": {
                 slice_type: {
-                    "stats": r["stats"],
+                    "stats": convert_stats_for_json(r["stats"]),
                     "temporal_stats": r["temporal_stats"],
                     "processed_subjects": r["processed_subjects"]
                 }

@@ -63,7 +63,7 @@ def run_test(cfg: Dict, formatter: ImageProcessingFormatter) -> int:
     # Get parameters
     slice_types = crop_cfg.get("slice_types", ["axial", "coronal", "sagittal"])
     splits = crop_cfg.get("splits", ["train", "val", "test"])
-    groups = crop_cfg.get("groups", ["AD", "CN"])
+    groups = crop_cfg.get("groups", ["AD", "CN", "MCI"])
     crop_padding = crop_cfg.get("crop_padding", 5)
     target_size = tuple(crop_cfg.get("target_size", [256, 256]))
     rotation_angle = crop_cfg.get("rotation_angle", 180)
@@ -208,7 +208,7 @@ def run_process(cfg: Dict, formatter: ImageProcessingFormatter) -> int:
     # Get parameters
     slice_types = crop_cfg.get("slice_types", ["axial", "coronal", "sagittal"])
     splits = crop_cfg.get("splits", ["train", "val", "test"])
-    groups = crop_cfg.get("groups", ["AD", "CN"])
+    groups = crop_cfg.get("groups", ["AD", "CN", "MCI"])
     crop_padding = crop_cfg.get("crop_padding", 5)
     target_size = tuple(crop_cfg.get("target_size", [256, 256]))
     rotation_angle = crop_cfg.get("rotation_angle", 180)

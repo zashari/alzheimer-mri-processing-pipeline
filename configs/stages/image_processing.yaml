@@ -19,7 +19,7 @@ image_processing:
     splits: ["train", "val", "test"]
 
     # Group labels to use
-    groups: ["AD", "CN"]  # Exclude MCI if not needed
+    groups: ["AD", "CN", "MCI"]
 
     # Required visits for complete sequences
     required_visits: ["sc", "m06", "m12"]
@@ -63,7 +63,7 @@ image_processing:
     splits: ["train", "val", "test"]
 
     # Group labels to use
-    groups: ["AD", "CN"]  # Exclude MCI if not needed
+    groups: ["AD", "CN", "MCI"]
 
     # Required visits for complete sequences
     required_visits: ["sc", "m06", "m12"]
@@ -92,7 +92,7 @@ image_processing:
     slice_types: ["axial", "coronal", "sagittal"]
 
     # Group labels to use
-    groups: ["AD", "CN"]  # Exclude MCI if not needed
+    groups: ["AD", "CN", "MCI"]
 
     # Required visits for complete sequences
     required_visits: ["sc", "m06", "m12"]
@@ -104,6 +104,8 @@ image_processing:
         target: 180  # Target number of subjects for AD class
       CN:
         target: 180  # Target number of subjects for CN class
+      MCI:
+        target: 180  # Target number of subjects for MCI class
 
     # Augmentation parameter ranges
     augmentation_params:

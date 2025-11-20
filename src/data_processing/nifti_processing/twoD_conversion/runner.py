@@ -67,7 +67,7 @@ def run_test(cfg: Dict, formatter: NiftiFormatter) -> int:
     # Initialize processor
     processor = TwoDConversionProcessor(
         required_visits=conv_cfg.get("required_visits", ["sc", "m06", "m12"]),
-        groups=conv_cfg.get("groups", ["AD", "CN"]),
+        groups=conv_cfg.get("groups", ["AD", "CN", "MCI"]),
         splits=conv_cfg.get("splits", ["train", "val", "test"]),
         intensity_percentile=intensity_percentile,
         target_size=target_size,
@@ -229,7 +229,7 @@ def run_process(cfg: Dict, formatter: NiftiFormatter) -> int:
     # Initialize processor
     processor = TwoDConversionProcessor(
         required_visits=conv_cfg.get("required_visits", ["sc", "m06", "m12"]),
-        groups=conv_cfg.get("groups", ["AD", "CN"]),
+        groups=conv_cfg.get("groups", ["AD", "CN", "MCI"]),
         splits=conv_cfg.get("splits", ["train", "val", "test"]),
         intensity_percentile=intensity_percentile,
         target_size=target_size,
