@@ -15,6 +15,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Provides real-time feedback during long-running batch processing operations
   - Test mode already had progress bar; process mode now matches
 
+### Changed
+- **Output distribution format**: Made output distribution display more compact
+  - Groups are now displayed on a single line per split: "train total: X files | AD: Y, MCI: Z, CN: W |"
+  - Reduces vertical space while maintaining all information
+  - Groups displayed in order: AD, MCI, CN
+  - Applies to all image_processing sub-stages that use output_distribution
+
 ## [1.7.1] - 2025-11-20
 
 ### Fixed

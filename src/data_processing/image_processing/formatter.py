@@ -148,14 +148,27 @@ class ImageProcessingFormatter:
                 if split not in distribution[slice_type]:
                     continue
 
-                split_total = 0
-                for group in sorted(distribution[slice_type][split].keys()):
-                    count = distribution[slice_type][split][group]
-                    self.console.print(f"    {split}/{group}: {count:,} files")
-                    split_total += count
-
+                split_data = distribution[slice_type][split]
+                split_total = sum(split_data.values())
+                
                 if split_total > 0:
-                    self.console.print(f"    {split} total: {split_total:,} files")
+                    # Build compact group list: "AD: 279, MCI: 651, CN: 408"
+                    # Use custom order: AD, MCI, CN (matching user preference)
+                    group_order = ["AD", "MCI", "CN"]
+                    group_parts = []
+                    for group in group_order:
+                        if group in split_data:
+                            count = split_data[group]
+                            group_parts.append(f"{group}: {count:,}")
+                    # Add any remaining groups not in the standard order
+                    for group in sorted(split_data.keys()):
+                        if group not in group_order:
+                            count = split_data[group]
+                            group_parts.append(f"{group}: {count:,}")
+                    group_str = ", ".join(group_parts)
+                    
+                    self.console.print(f"    {split} total: {split_total:,} files | {group_str} |")
+                
                 slice_total += split_total
 
             if slice_total > 0:
