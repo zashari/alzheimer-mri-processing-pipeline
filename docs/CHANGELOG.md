@@ -13,6 +13,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - The inner `sum()` already correctly calculates the total PNG count across all groups
   - Visualization now works correctly with MCI group support
   - Fixes crash when generating overall summary plot for multiple slice types
+- **TwoD conversion visualization AttributeError**: Fixed `AttributeError: 'int' object has no attribute 'values'` in subjects calculation
+  - Fixed incorrect assumption that `group_data` was a dictionary when it's actually an integer
+  - Changed from `sum(group_data.values())` to directly summing the integer counts
+  - Subjects count now correctly calculated across all splits and groups
+  - Visualization completes successfully without errors
 
 ## [1.7.0] - 2025-11-20
 

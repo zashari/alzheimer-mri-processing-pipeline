@@ -129,10 +129,10 @@ def create_visualizations(
 
             png = sum(group_data.get("saved", 0) for group_data in stats.values()) if isinstance(stats, dict) else 0
             subjects = sum(
-                sum(group_data.values())
+                count
                 for split_data in processed_subjects.values()
-                for group_data in split_data.values()
-            )
+                for count in split_data.values()
+            ) if isinstance(processed_subjects, dict) else 0
 
             total_png.append(png)
             total_subjects.append(subjects)
