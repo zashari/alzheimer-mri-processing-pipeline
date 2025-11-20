@@ -5,6 +5,24 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.7.2] - 2025-11-20
+
+### Added
+- **Center crop progress bar**: Added progress bar visualization to center_crop sub-stage process mode
+  - Progress bar shows current file being processed and overall progress
+  - Displays format: "Processing X/Total files | filename.png"
+  - Matches progress bar style used in nifti_processing stages
+  - Provides real-time feedback during long-running batch processing operations
+  - Test mode already had progress bar; process mode now matches
+
+### Changed
+- **Distribution format**: Made input and output distribution displays more compact
+  - Groups are now displayed on a single line per split: "train total: X files | AD: Y, MCI: Z, CN: W |"
+  - Reduces vertical space while maintaining all information
+  - Groups displayed in order: AD, MCI, CN
+  - Applies to both INPUT DISTRIBUTION and OUTPUT DISTRIBUTION
+  - Applies to all image_processing sub-stages that use these formatters
+
 ## [1.7.1] - 2025-11-20
 
 ### Fixed

@@ -267,9 +267,26 @@ def run_process(cfg: Dict, formatter: ImageProcessingFormatter) -> int:
     # Show input distribution
     formatter.input_distribution(input_distribution)
 
-    # Process all files
+    # Process all files with progress bar
     start_time = time.time()
-    result = processor.process_batch(input_dir, output_dir)
+    
+    with formatter.create_progress_bar() as progress:
+        task = progress.add_task(
+            f"[cyan]Processing {len(png_paths)} files[/cyan]",
+            total=len(png_paths)
+        )
+        
+        def progress_callback(current_idx, total, file_name, status):
+            """Update progress bar with current file being processed."""
+            current_num = current_idx + 1
+            progress.update(
+                task,
+                advance=1,
+                description=f"[cyan]Processing {current_num}/{total} files[/cyan] | {file_name}"
+            )
+        
+        result = processor.process_batch(input_dir, output_dir, progress_callback)
+    
     processing_time = time.time() - start_time
 
     # Show results

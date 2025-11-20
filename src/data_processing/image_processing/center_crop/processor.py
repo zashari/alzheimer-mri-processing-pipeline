@@ -179,7 +179,8 @@ class CenterCropProcessor:
     def process_batch(
         self,
         input_root: Path,
-        output_root: Path
+        output_root: Path,
+        progress_callback=None
     ) -> Dict:
         """
         Process all PNG files in input directory.
@@ -187,6 +188,8 @@ class CenterCropProcessor:
         Args:
             input_root: Root directory for input PNG files
             output_root: Root directory for output PNG files
+            progress_callback: Optional callback function for progress updates
+                Called as: progress_callback(current_idx, total, file_name, status)
 
         Returns:
             Dictionary with processing statistics
@@ -203,7 +206,7 @@ class CenterCropProcessor:
         }
         output_distribution = defaultdict(lambda: defaultdict(lambda: defaultdict(int)))
 
-        for input_path in png_paths:
+        for idx, input_path in enumerate(png_paths):
             try:
                 # Compute relative path, mirror directory tree
                 rel = input_path.relative_to(input_root)
@@ -233,9 +236,16 @@ class CenterCropProcessor:
                     if error_msg:
                         stats["error_details"].append(f"{input_path.name}: {error_msg}")
 
+                # Call progress callback if provided
+                if progress_callback:
+                    progress_callback(idx, len(png_paths), input_path.name, status)
+
             except Exception as e:
                 stats["errors"] += 1
                 stats["error_details"].append(f"{input_path.name}: {str(e)}")
+                # Call progress callback even on exception
+                if progress_callback:
+                    progress_callback(idx, len(png_paths), input_path.name, "error")
 
         return {
             "stats": stats,
