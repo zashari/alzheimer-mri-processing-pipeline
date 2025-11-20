@@ -76,7 +76,7 @@ def run_test(cfg: Dict, formatter: NiftiFormatter) -> int:
     processor = LabellingProcessor(
         metadata_csv=metadata_csv,
         required_visits=label_cfg.get("required_visits", ["sc", "m06", "m12"]),
-        groups=label_cfg.get("groups", ["AD", "CN"]),
+        groups=label_cfg.get("groups", ["AD", "CN", "MCI"]),
         splits=label_cfg.get("splits", ["train", "val", "test"]),
         duplicate_strategy=label_cfg.get("duplicate_strategy", "largest"),
         remove_empty_files=label_cfg.get("remove_empty_files", True),
@@ -203,7 +203,7 @@ def run_process(cfg: Dict, formatter: NiftiFormatter) -> int:
     processor = LabellingProcessor(
         metadata_csv=metadata_csv,
         required_visits=label_cfg.get("required_visits", ["sc", "m06", "m12"]),
-        groups=label_cfg.get("groups", ["AD", "CN"]),
+        groups=label_cfg.get("groups", ["AD", "CN", "MCI"]),
         splits=label_cfg.get("splits", ["train", "val", "test"]),
         duplicate_strategy=label_cfg.get("duplicate_strategy", "largest"),
         remove_empty_files=label_cfg.get("remove_empty_files", True),

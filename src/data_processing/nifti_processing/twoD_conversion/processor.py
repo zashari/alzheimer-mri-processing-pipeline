@@ -37,7 +37,7 @@ class TwoDConversionProcessor:
 
         Args:
             required_visits: List of required visits (e.g., ["sc", "m06", "m12"])
-            groups: List of groups to process (e.g., ["AD", "CN"])
+            groups: List of groups to process (e.g., ["AD", "CN", "MCI"])
             splits: List of splits to process (e.g., ["train", "val", "test"])
             intensity_percentile: Percentile range for normalization (low, high)
             target_size: Target resolution for PNG images (width, height)

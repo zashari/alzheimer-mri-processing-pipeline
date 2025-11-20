@@ -5,6 +5,16 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.7.0] - 2025-11-20
+
+### Added
+- **MCI group support in NIfTI processing stages**: Added MCI (Mild Cognitive Impairment) group to labelling and 2D conversion stages
+  - Updated `groups` configuration to include `["AD", "CN", "MCI"]` in labelling stage
+  - Updated `groups` configuration to include `["AD", "CN", "MCI"]` in twoD_conversion stage
+  - Updated default fallback values in code to include MCI
+  - MCI subjects are now processed and included in output splits
+  - Fixes "Unknown groups" warnings for MCI subjects
+
 ## [1.6.14] - 2025-11-20
 
 ### Fixed

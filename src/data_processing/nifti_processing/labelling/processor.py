@@ -34,7 +34,7 @@ class LabellingProcessor:
         Args:
             metadata_csv: Path to metadata CSV with Subject, Group, Split columns
             required_visits: List of required visits (e.g., ["sc", "m06", "m12"])
-            groups: List of groups to process (e.g., ["AD", "CN"])
+            groups: List of groups to process (e.g., ["AD", "CN", "MCI"])
             splits: List of splits to process (e.g., ["train", "val", "test"])
             duplicate_strategy: Strategy for handling duplicates ("largest", "newest", "skip")
             remove_empty_files: Whether to remove empty files (0 bytes)

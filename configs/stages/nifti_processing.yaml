@@ -138,7 +138,7 @@ nifti_processing:
         pattern: "*_optimal_sagittal_x*.nii.gz"
 
     # Group labels to use (from metadata)
-    groups: ["AD", "CN"]  # Exclude MCI if not needed
+    groups: ["AD", "CN", "MCI"]
 
     # Data splits
     splits: ["train", "val", "test"]
@@ -189,7 +189,7 @@ nifti_processing:
         coord_name: "x"
 
     # Group labels to use (from metadata)
-    groups: ["AD", "CN"]  # Exclude MCI if not needed
+    groups: ["AD", "CN", "MCI"]
 
     # Data splits
     splits: ["train", "val", "test"]
