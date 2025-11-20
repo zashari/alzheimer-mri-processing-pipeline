@@ -75,7 +75,7 @@ def run_test(cfg: Dict, formatter: ImageProcessingFormatter) -> int:
 
     # Get parameters
     slice_types = bal_cfg.get("slice_types", ["axial", "coronal", "sagittal"])
-    groups = bal_cfg.get("groups", ["AD", "CN"])
+    groups = bal_cfg.get("groups", ["AD", "CN", "MCI"])
     required_visits = bal_cfg.get("required_visits", ["sc", "m06", "m12"])
     augmentation_targets = bal_cfg.get("augmentation_targets", {})
     augmentation_params = bal_cfg.get("augmentation_params", {})
@@ -204,7 +204,7 @@ def run_process(cfg: Dict, formatter: ImageProcessingFormatter) -> int:
 
     # Get parameters
     slice_types = bal_cfg.get("slice_types", ["axial", "coronal", "sagittal"])
-    groups = bal_cfg.get("groups", ["AD", "CN"])
+    groups = bal_cfg.get("groups", ["AD", "CN", "MCI"])
     required_visits = bal_cfg.get("required_visits", ["sc", "m06", "m12"])
     augmentation_targets = bal_cfg.get("augmentation_targets", {})
     augmentation_params = bal_cfg.get("augmentation_params", {})

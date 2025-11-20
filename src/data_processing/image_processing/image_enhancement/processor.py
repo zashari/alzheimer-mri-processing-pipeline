@@ -318,7 +318,7 @@ class ImageEnhancementProcessor:
         self.num_wolves = num_wolves
         self.slice_types = slice_types or ["axial", "coronal", "sagittal"]
         self.splits = splits or ["train", "val", "test"]
-        self.groups = groups or ["AD", "CN"]
+        self.groups = groups or ["AD", "CN", "MCI"]
         self.required_visits = required_visits or ["sc", "m06", "m12"]
         self.max_images_per_class = max_images_per_class
         self.seed = seed

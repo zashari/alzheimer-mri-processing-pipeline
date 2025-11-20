@@ -8,12 +8,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [1.7.0] - 2025-11-20
 
 ### Added
-- **MCI group support in NIfTI processing stages**: Added MCI (Mild Cognitive Impairment) group to labelling and 2D conversion stages
-  - Updated `groups` configuration to include `["AD", "CN", "MCI"]` in labelling stage
-  - Updated `groups` configuration to include `["AD", "CN", "MCI"]` in twoD_conversion stage
-  - Updated default fallback values in code to include MCI
-  - MCI subjects are now processed and included in output splits
-  - Fixes "Unknown groups" warnings for MCI subjects
+- **MCI group support across all processing stages**: Added MCI (Mild Cognitive Impairment) group support throughout the pipeline
+  - **NIfTI processing stages**: Updated `groups` configuration to include `["AD", "CN", "MCI"]` in labelling and twoD_conversion stages
+  - **Image processing stages**: Updated `groups` configuration to include `["AD", "CN", "MCI"]` in center_crop, image_enhancement, and data_balancing stages
+  - **Data balancing**: Added MCI to `augmentation_targets` configuration with default target of 180 subjects
+  - Updated default fallback values in all code files to include MCI
+  - Updated docstrings to reflect MCI support
+  - MCI subjects are now processed and included in all output splits throughout the pipeline
+  - Fixes "Unknown groups" warnings for MCI subjects (310 MCI subjects now fully processed)
 
 ## [1.6.14] - 2025-11-20
 

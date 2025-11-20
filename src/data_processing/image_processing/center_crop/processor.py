@@ -36,7 +36,7 @@ class CenterCropProcessor:
         Args:
             slice_types: List of slice types to process (e.g., ["axial", "coronal", "sagittal"])
             splits: List of splits to process (e.g., ["train", "val", "test"])
-            groups: List of groups to process (e.g., ["AD", "CN"])
+            groups: List of groups to process (e.g., ["AD", "CN", "MCI"])
             crop_padding: Padding to add around brain bounding box (pixels)
             target_size: Target resolution for output images (width, height)
             rotation_angle: Rotation angle in degrees
