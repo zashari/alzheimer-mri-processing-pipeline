@@ -5,6 +5,15 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.6.14] - 2025-11-20
+
+### Fixed
+- **Labelling stage JSON report truncation**: Fixed JSON serialization error causing truncated reports
+  - Converted tuple keys in statistics dictionary to strings before JSON serialization
+  - Tuple keys like `("train", "AD")` are now converted to `"train_AD"` format
+  - JSON reports now save completely without truncation
+  - Fixes incomplete JSON report files in `.reports/` directory
+
 ## [1.6.13] - 2025-11-20
 
 ### Fixed
@@ -13,6 +22,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - The metadata CSV file is created by data_preparation stage in `outputs/manifests/` directory
   - Labelling stage now correctly locates the metadata CSV file
   - Fixes "Metadata CSV not found" error when running labelling stage
+- **Labelling stage JSON report truncation**: Fixed JSON serialization error causing truncated reports
+  - Converted tuple keys in statistics dictionary to strings before JSON serialization
+  - Tuple keys like `("train", "AD")` are now converted to `"train_AD"` format
+  - JSON reports now save completely without truncation
+  - Fixes incomplete JSON report files in `.reports/` directory
 
 ## [1.6.12] - 2025-11-17
 
