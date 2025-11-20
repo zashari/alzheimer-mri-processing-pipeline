@@ -265,7 +265,7 @@ def run_process(cfg: Dict, formatter: ImageProcessingFormatter) -> int:
     formatter.print(f"  • GWO iterations: {gwo_iterations}")
     formatter.print(f"  • Number of wolves: {num_wolves}")
     formatter.print(f"  • Max workers: {max_workers}")
-    formatter.print()
+    formatter.print("")
 
     # Check input directory
     if not input_dir.exists():
@@ -303,7 +303,7 @@ def run_process(cfg: Dict, formatter: ImageProcessingFormatter) -> int:
                     split, cls = key.split("_", 1)
                     visit_str = ", ".join([f"{v}:{visit_dist.get(v, 0)}" for v in required_visits])
                     formatter.print(f"    {split}/{cls}: visits({visit_str})")
-        formatter.print()
+        formatter.print("")
 
     # Process all files in parallel
     start_time = time.time()
