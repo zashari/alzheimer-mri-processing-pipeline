@@ -23,6 +23,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Applies to both INPUT DISTRIBUTION and OUTPUT DISTRIBUTION
   - Applies to all image_processing sub-stages that use these formatters
 
+## [1.7.3] - 2025-11-20
+
+### Fixed
+- **Image enhancement print method error**: Fixed `TypeError: ImageProcessingFormatter.print() missing 1 required positional argument: 'message'`
+  - Fixed incorrect calls to `formatter.print()` without arguments
+  - Changed to `formatter.print("")` for blank lines
+  - Fixed in image_enhancement and data_balancing sub-stages
+  - Formatter.print() method requires a message parameter
+  - Fixes crash when running image_enhancement process mode
+
 ## [1.7.1] - 2025-11-20
 
 ### Fixed

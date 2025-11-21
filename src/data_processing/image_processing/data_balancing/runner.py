@@ -244,7 +244,7 @@ def run_process(cfg: Dict, formatter: ImageProcessingFormatter) -> int:
             current = augmentation_targets[group].get("current", 0)
             target = augmentation_targets[group].get("target", current)
             formatter.print(f"    - {group}: {current} → {target} subjects")
-    formatter.print()
+    formatter.print("")
 
     # Check input directory
     if not input_dir.exists():
