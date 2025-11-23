@@ -130,7 +130,7 @@ python3 --version
 If you prefer more control or need to customize parameters, you can run the Python CLI directly:
 
 ```bash
-python -m data_processing.cli <stage> <action> [options]
+adp <stage> <action> [options]
 ```
 
 See the main README.md for detailed CLI usage examples.

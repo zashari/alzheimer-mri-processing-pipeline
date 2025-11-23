@@ -7,7 +7,7 @@ echo  Running Environment Setup Stage
 echo ================================================================================
 echo.
 
-python -m data_processing.cli environment_setup setup --auto-install true --perf-test full
+adp environment_setup setup --auto-install true --perf-test full
 
 if errorlevel 1 (
     echo.

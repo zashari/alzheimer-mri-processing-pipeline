@@ -8,7 +8,7 @@ echo ===========================================================================
 echo.
 
 echo Step 1/2: Splitting data...
-python -m data_processing.cli data_preparation split
+adp data_preparation split
 
 if errorlevel 1 (
     echo.
@@ -19,7 +19,7 @@ if errorlevel 1 (
 
 echo.
 echo Step 2/2: Analyzing data...
-python -m data_processing.cli data_preparation analyze
+adp data_preparation analyze
 
 if errorlevel 1 (
     echo.

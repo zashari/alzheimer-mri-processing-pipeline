@@ -10,15 +10,15 @@ echo "════════════════════════�
 echo ""
 
 echo "Step 1/3: Center Crop..."
-python -m data_processing.cli image_processing process --substage center_crop
+adp image_processing process --substage center_crop
 
 echo ""
 echo "Step 2/3: Image Enhancement..."
-python -m data_processing.cli image_processing process --substage image_enhancement
+adp image_processing process --substage image_enhancement
 
 echo ""
 echo "Step 3/3: Data Balancing..."
-python -m data_processing.cli image_processing process --substage data_balancing
+adp image_processing process --substage data_balancing
 
 echo ""
 echo "══════════════════════════════════════════════════════════════════════"
