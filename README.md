@@ -4,6 +4,8 @@
 [![Cite](https://img.shields.io/badge/cite-CITATION.cff-blue)](./CITATION.cff)
 [![Status](https://img.shields.io/badge/status-stable-success)](./docs/CHANGELOG.md)
 
+![Alzheimer MRI Processing Pipeline](./img/thumbnail.png)
+
 # Alzheimer MRI Processing Pipeline
 
 A **complete, production-ready 3D NIfTI preprocessing pipeline** for ADNI T1-weighted MRI data, designed to accelerate Alzheimer's disease research by automating the entire preprocessing workflow from raw NIfTI files to training-ready 2D image sequences.
