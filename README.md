@@ -477,97 +477,6 @@ outputs/
     ├── image_enhancement/
     └── data_balancing/
 ```
-
----
-
-## Troubleshooting
-
-### Common Issues
-
-#### 1. Stage Registration Fails
-
-**Problem:** `Unknown stage: <stage_name>. Available: []`
-
-**Solution:**
-```bash
-# Ensure dependencies are installed
-pip install -r requirements.txt
-
-# Install package in editable mode
-pip install -e .
-
-# Verify installation
-python -c "from data_processing.stages import available_stages; print(list(available_stages().keys()))"
-# Should output: ['environment_setup', 'data_preparation', 'nifti_processing', 'image_processing']
-```
-
-#### 2. GPU Not Detected
-
-**Problem:** Pipeline runs on CPU despite GPU being available
-
-**Solution:**
-```bash
-# Verify CUDA installation
-nvidia-smi  # Should show GPU information
-
-# Verify PyTorch CUDA support
-python -c "import torch; print(torch.cuda.is_available())"
-
-# Reinstall PyTorch with CUDA support
-pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu126
-```
-
-#### 3. Template Files Missing
-
-**Problem:** Template registration fails with file not found error
-
-**Solution:**
-1. Download MNI brain template to `support_files/templates/mni-brain/MNI152_T1_1mm_brain.nii.gz`
-2. Download hippocampus ROI to `support_files/templates/hippocampal-roi/hippho50.nii.gz`
-3. Verify template paths in `configs/stages/nifti_processing.yaml` under `template_registration` section, or override via CLI:
-   ```bash
-   # Override both template paths (use absolute paths or paths relative to project root)
-   adp nifti_processing process --substage template_registration \
-     --set nifti_processing.template_registration.mni_template_path=support_files/templates/mni-brain/MNI152_T1_1mm_brain.nii.gz \
-     --set nifti_processing.template_registration.hippocampus_roi_path=support_files/templates/hippocampal-roi/hippho50.nii.gz
-   ```
-
-#### 4. Out of Memory Errors
-
-**Problem:** GPU runs out of memory during processing
-
-**Solution:**
-- Reduce parallel processing for GPU-intensive `nifti_processing` substages:
-  ```bash
-  # Skull stripping (most GPU-intensive - HD-BET uses GPU)
-  adp nifti_processing process --substage skull_stripping \
-    --set nifti_processing.skull_stripping.subjects_per_batch=2
-  
-  # Template registration (CPU-intensive, memory-heavy - ANTs uses CPU threading)
-  adp nifti_processing process --substage template_registration \
-    --set nifti_processing.template_registration.max_workers=1 \
-    --set nifti_processing.template_registration.registration.num_threads=4
-  ```
-- Process files in smaller batches
-- Use CPU mode: `--set nifti_processing.skull_stripping.device=cpu`
-- Close other GPU-intensive applications
-
-#### 5. Permission Errors on Windows
-
-**Problem:** `PermissionError: [WinError 5] Access is denied`
-
-**Solution:**
-- Close Jupyter Lab or other Python processes using the environment
-- Run terminal as administrator (if necessary)
-- Ensure no files are locked by other processes
-
-### Getting Help
-
-- **Check Logs:** Review `.reports/*.json` for detailed error information
-- **Enable Debug Mode:** Use `--debug` flag for detailed output
-- **GitHub Issues:** Report bugs or ask questions on [GitHub Issues](https://github.com/zashari/alzheimer-mri-processing-pipeline/issues)
-- **Email:** Contact `izzat.zaky@gmail.com` for direct support
-
 ---
 
 ## Contributing
@@ -638,22 +547,15 @@ https://github.com/zashari/alzheimer-mri-processing-pipeline
 
 This pipeline is built upon and informed by the following research papers and methods. When publishing work that uses this pipeline, please cite the relevant references:
 
-#### Skull Stripping
->- Druzhinina, P., & Kondrateva, E. (2022). *The effect of skull-stripping on transfer learning for 3D MRI models: ADNI data.* Medical Imaging with Deep >Learning (MIDL). [https://openreview.net/forum?id=IS1yeyiAFZS](https://openreview.net/forum?id=IS1yeyiAFZS)
->- Isensee, F., Schell, M., Tursunova, I., *et al.* (2019). *Automated brain extraction of multi-sequence MRI using artificial neural networks.* Human >Brain Mapping. [https://doi.org/10.1002/hbm.24750](https://doi.org/10.1002/hbm.24750) — **HD-BET tool**: [https://github.com/MIC-DKFZ/HD-BET](https://>github.com/MIC-DKFZ/HD-BET)
+| Methodology                          | Author(s)                                                                                       | Links |
+|--------------------------------------|--------------------------------------------------------------------------------------------------|--------|
+| Skull Stripping                      | Druzhinina, P.; Kondrateva, E.                                                                   | [Click here](https://openreview.net/forum?id=IS1yeyiAFZS) |
+| Skull Stripping                      | Isensee, F.; Schell, M.; Tursunova, I.; et al.                                                  | [Click here](https://doi.org/10.1002/hbm.24750)<br>[Click here](https://github.com/MIC-DKFZ/HD-BET) |
+| Alzheimer's Disease ROI              | Hassouneh, A.; Bazuin, B.; Danna-Dos-Santos, A.; Acar, I.; Abdel-Qader, I.; ADNI                | [Click here](https://doi.org/10.1159/000538486) |
+| Data Augmentation / Domain Adaptation| Llambias, S. N.; Nielsen, M.; Mehdipour Ghazi, M.                                               | [Click here](https://doi.org/10.48550/arXiv.2308.04395) |
+| Image Enhancement / Optimization     | Mirjalili, S.; Mirjalili, S. M.; Lewis, A.                                                      | [Click here](https://doi.org/10.1016/j.advengsoft.2013.12.007) |
+| Dataset                              | ADNI                                                                                            | [Click here](https://adni.loni.usc.edu/wp-content/uploads/how_to_apply/ADNI_Manuscript_Citations.pdf) |
 
-#### Alzheimer's Disease ROI
->- Hassouneh, A., Bazuin, B., Danna-Dos-Santos, A., Acar, I., Abdel-Qader, I., & ADNI. (2024). *Feature Importance Analysis and Machine Learning for >Alzheimer's Disease Early Detection: Feature Fusion of the Hippocampus, Entorhinal Cortex, and Standardized Uptake Value Ratio.* [https://doi.org/10.1159/>000538486](https://doi.org/10.1159/000538486)
-
-#### Data Augmentation / Domain Adaptation
->- Llambias, S. N., Nielsen, M., & Mehdipour Ghazi, M. (2023). *Data Augmentation-Based Unsupervised Domain Adaptation In Medical Imaging.* arXiv preprint >arXiv:2308.04395. [https://doi.org/10.48550/arXiv.2308.04395](https://doi.org/10.48550/arXiv.2308.04395)
-
-#### Image Enhancement / Optimization
->- Mirjalili, S., Mirjalili, S. M., & Lewis, A. (2014). *Grey Wolf Optimizer.* Advances in Engineering Software, 69, 46–61. [https://doi.org/10.1016/j.>advengsoft.2013.12.007](https://doi.org/10.1016/j.advengsoft.2013.12.007)
-
-#### Dataset
->- **ADNI Dataset**: If using ADNI data, follow [ADNI citation requirements](https://adni.loni.usc.edu/wp-content/uploads/how_to_apply/>ADNI_Manuscript_Citations.pdf)
->- Imaging Data Archive (IDA) at LONI: [https://ida.loni.usc.edu/](https://ida.loni.usc.edu/)
 
 ---
 
