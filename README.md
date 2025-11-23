@@ -45,18 +45,6 @@ A **complete, production-ready 3D NIfTI preprocessing pipeline** for ADNI T1-wei
 >
 > **Before requesting data access, read the [ADNI Data Use Agreement](https://ida.loni.usc.edu/collaboration/access/appLicense.jsp) and then follow the [ADNI data access instructions](https://adni.loni.usc.edu/data-samples/adni-data/#AccessData).**
 
-### Scope of This Repository
-
-**Included:**
-- ✅ Processing framework and utilities (code only)
-- ✅ Configuration templates for experiments
-- ✅ Documentation and examples
-
-**Explicitly Excluded:**
-- ❌ ADNI participant-level data
-- ❌ ADNI-derived datasets or processed outputs
-- ❌ Participant identifiers or metadata
-
 ### Requirements for ADNI Data Users
 
 If you use this pipeline with **ADNI data**, you must comply with the ADNI DUA: <https://ida.loni.usc.edu/collaboration/access/appLicense.jsp>
@@ -74,7 +62,7 @@ If you use this pipeline with **ADNI data**, you must comply with the ADNI DUA: 
 
 ## Overview
 
-This repository provides a **complete 3D NIfTI preprocessing pipeline** for **ADNI T1-weighted MRI** data, transforming raw medical imaging files into training-ready 2D image sequences optimized for temporal deep learning models (e.g., CNN+LSTM architectures).
+This repository provides a **complete 3D NIfTI preprocessing pipeline** for **ADNI T1-weighted MRI** data, transforming raw medical imaging files into training-ready 2D image sequences optimized for temporal deep learning models (e.g., CNN+LSTM architectures), or even non-temporal deep learning models.
 
 The pipeline was developed in **early 2025** as part of a final-year thesis project, with the goal of reducing time spent on data wrangling so researchers can focus on modeling and experimentation.
 
@@ -99,7 +87,6 @@ The pipeline was developed in **early 2025** as part of a final-year thesis proj
 - ✅ **JSON Reports** - Detailed execution reports for each stage
 - ✅ **Configuration Management** - YAML-based configuration with CLI overrides
 - ✅ **Convenience Scripts** - Pre-built scripts for easy execution (Windows/Unix)
-- ✅ **Comprehensive Logging** - Detailed logs for debugging and monitoring
 - ✅ **Template Support** - Pre-configured templates for MNI brain and hippocampus ROI
 
 ---
@@ -300,7 +287,7 @@ adp environment_setup setup --auto-install true # Full setup
 
 **Data Preparation:**
 ```bash
-adp data_preparation split                      # Split data
+adp data_preparation split                      # Split data - this will automatically generate manifests
 adp data_preparation analyze                    # Analyze metadata
 adp data_preparation manifests                  # Generate manifests only
 ```
@@ -652,21 +639,21 @@ https://github.com/zashari/alzheimer-mri-processing-pipeline
 This pipeline is built upon and informed by the following research papers and methods. When publishing work that uses this pipeline, please cite the relevant references:
 
 #### Skull Stripping
-- Druzhinina, P., & Kondrateva, E. (2022). *The effect of skull-stripping on transfer learning for 3D MRI models: ADNI data.* Medical Imaging with Deep Learning (MIDL). [https://openreview.net/forum?id=IS1yeyiAFZS](https://openreview.net/forum?id=IS1yeyiAFZS)
-- Isensee, F., Schell, M., Tursunova, I., *et al.* (2019). *Automated brain extraction of multi-sequence MRI using artificial neural networks.* Human Brain Mapping. [https://doi.org/10.1002/hbm.24750](https://doi.org/10.1002/hbm.24750) — **HD-BET tool**: [https://github.com/MIC-DKFZ/HD-BET](https://github.com/MIC-DKFZ/HD-BET)
+>- Druzhinina, P., & Kondrateva, E. (2022). *The effect of skull-stripping on transfer learning for 3D MRI models: ADNI data.* Medical Imaging with Deep >Learning (MIDL). [https://openreview.net/forum?id=IS1yeyiAFZS](https://openreview.net/forum?id=IS1yeyiAFZS)
+>- Isensee, F., Schell, M., Tursunova, I., *et al.* (2019). *Automated brain extraction of multi-sequence MRI using artificial neural networks.* Human >Brain Mapping. [https://doi.org/10.1002/hbm.24750](https://doi.org/10.1002/hbm.24750) — **HD-BET tool**: [https://github.com/MIC-DKFZ/HD-BET](https://>github.com/MIC-DKFZ/HD-BET)
 
 #### Alzheimer's Disease ROI
-- Hassouneh, A., Bazuin, B., Danna-Dos-Santos, A., Acar, I., Abdel-Qader, I., & ADNI. (2024). *Feature Importance Analysis and Machine Learning for Alzheimer's Disease Early Detection: Feature Fusion of the Hippocampus, Entorhinal Cortex, and Standardized Uptake Value Ratio.* [https://doi.org/10.1159/000538486](https://doi.org/10.1159/000538486)
+>- Hassouneh, A., Bazuin, B., Danna-Dos-Santos, A., Acar, I., Abdel-Qader, I., & ADNI. (2024). *Feature Importance Analysis and Machine Learning for >Alzheimer's Disease Early Detection: Feature Fusion of the Hippocampus, Entorhinal Cortex, and Standardized Uptake Value Ratio.* [https://doi.org/10.1159/>000538486](https://doi.org/10.1159/000538486)
 
 #### Data Augmentation / Domain Adaptation
-- Llambias, S. N., Nielsen, M., & Mehdipour Ghazi, M. (2023). *Data Augmentation-Based Unsupervised Domain Adaptation In Medical Imaging.* arXiv preprint arXiv:2308.04395. [https://doi.org/10.48550/arXiv.2308.04395](https://doi.org/10.48550/arXiv.2308.04395)
+>- Llambias, S. N., Nielsen, M., & Mehdipour Ghazi, M. (2023). *Data Augmentation-Based Unsupervised Domain Adaptation In Medical Imaging.* arXiv preprint >arXiv:2308.04395. [https://doi.org/10.48550/arXiv.2308.04395](https://doi.org/10.48550/arXiv.2308.04395)
 
 #### Image Enhancement / Optimization
-- Mirjalili, S., Mirjalili, S. M., & Lewis, A. (2014). *Grey Wolf Optimizer.* Advances in Engineering Software, 69, 46–61. [https://doi.org/10.1016/j.advengsoft.2013.12.007](https://doi.org/10.1016/j.advengsoft.2013.12.007)
+>- Mirjalili, S., Mirjalili, S. M., & Lewis, A. (2014). *Grey Wolf Optimizer.* Advances in Engineering Software, 69, 46–61. [https://doi.org/10.1016/j.>advengsoft.2013.12.007](https://doi.org/10.1016/j.advengsoft.2013.12.007)
 
 #### Dataset
-- **ADNI Dataset**: If using ADNI data, follow [ADNI citation requirements](https://adni.loni.usc.edu/wp-content/uploads/how_to_apply/ADNI_Manuscript_Citations.pdf)
-- Imaging Data Archive (IDA) at LONI: [https://ida.loni.usc.edu/](https://ida.loni.usc.edu/)
+>- **ADNI Dataset**: If using ADNI data, follow [ADNI citation requirements](https://adni.loni.usc.edu/wp-content/uploads/how_to_apply/>ADNI_Manuscript_Citations.pdf)
+>- Imaging Data Archive (IDA) at LONI: [https://ida.loni.usc.edu/](https://ida.loni.usc.edu/)
 
 ---
 
@@ -697,4 +684,4 @@ This project is licensed under the **MIT License**. See the [LICENSE](LICENSE) f
 
 ---
 
-**For questions or support, please open an issue on [GitHub](https://github.com/zashari/alzheimer-mri-processing-pipeline/issues) or contact `izzat.zaky@gmail.com`.**
+**For questions or support, please open an issue on [GitHub](https://github.com/zashari/alzheimer-mri-processing-pipeline/issues) or contact `izzat.zaky@gmail.com` with subject format: `AD Pipeline Issue: {name the issue}`.**

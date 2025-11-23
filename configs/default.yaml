@@ -4,12 +4,9 @@
 
 paths:
   # Set these to your local dataset locations. You can override via --config or --set.
-  # Example raw ADNI-like layout root (subjects with nested scan_type/date/image_id):
-  data_root:  'D:\workspace\@zaky-ashari\playgrounds\alzheimer-disease\CODE_alzheimer-desease-classification\datasets\ADNI_1_5_T\.ADNI'
-  # Base output root; stage artifacts (e.g., manifests) will be placed under this root.
-  output_root: 'outputs'  # Now relative to project root
-  # Primary metadata CSV path (ADNI 1.5T 1-year cohort in your notebooks).
-  metadata_csv: 'D:\workspace\@zaky-ashari\playgrounds\alzheimer-disease\CODE_alzheimer-desease-classification\datasets\ADNI_1_5_T\ADNI1_Complete_1Yr_1.5T_3_21_2025.csv'
+  data_root: 'path/to/raw/nifti_files'  # Your raw dataset directory (example: {your_project/datasets/ADNI_1_5_T/})
+  output_root: 'outputs'                # Output directory (relative to project root) 
+  metadata_csv: "path/to/metadata.csv"  # Primary metadata CSV file path (example: {your_project/datasets/ADNI_1_5_T/metadata.csv})
 
 # Reproducibility and execution controls
 seed: 42
