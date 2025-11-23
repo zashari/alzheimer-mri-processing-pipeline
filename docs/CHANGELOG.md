@@ -5,6 +5,17 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.7.4] - 2025-11-21
+
+### Fixed
+- **Data balancing missing group handling**: Improved handling of missing group directories in data_balancing sub-stage
+  - Added upfront detection and reporting of missing group directories
+  - Provides clear warning when groups have no input data to augment from
+  - Shows actual subject counts vs targets for each group
+  - Removed redundant warnings during plane processing
+  - Guides users to run image_enhancement stage first if groups are missing
+  - Prevents confusing "0 → 180" display for groups without data
+
 ## [1.7.2] - 2025-11-20
 
 ### Added

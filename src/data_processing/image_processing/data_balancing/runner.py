@@ -132,6 +132,19 @@ def run_test(cfg: Dict, formatter: ImageProcessingFormatter) -> int:
     augmentation_log = {}
     stats_dict = {"augmented": 0, "copied": 0, "errors": 0}
 
+    # Check which groups have data available
+    missing_groups_test = []
+    for group in groups:
+        if group not in test_targets:
+            continue
+        input_class_path = input_dir / test_slice_type / "train" / group
+        if not input_class_path.exists():
+            missing_groups_test.append(group)
+
+    if missing_groups_test:
+        formatter.warning(f"Missing input data for groups: {', '.join(missing_groups_test)}")
+        formatter.info("These groups will be skipped as there are no source images to augment from.")
+
     try:
         for group in groups:
             if group not in test_targets:
@@ -141,7 +154,6 @@ def run_test(cfg: Dict, formatter: ImageProcessingFormatter) -> int:
             output_class_path = output_dir / test_slice_type / "train" / group
 
             if not input_class_path.exists():
-                formatter.warning(f"Input directory not found: {input_class_path}")
                 continue
 
             result = processor.augment_class(
@@ -238,12 +250,6 @@ def run_process(cfg: Dict, formatter: ImageProcessingFormatter) -> int:
     formatter.info("Configuration")
     formatter.print(f"  • Slice types: {', '.join(slice_types)}")
     formatter.print(f"  • Groups: {', '.join(groups)}")
-    formatter.print(f"  • Augmentation targets:")
-    for group in groups:
-        if group in augmentation_targets:
-            current = augmentation_targets[group].get("current", 0)
-            target = augmentation_targets[group].get("target", current)
-            formatter.print(f"    - {group}: {current} → {target} subjects")
     formatter.print("")
 
     # Check input directory
@@ -268,9 +274,10 @@ def run_process(cfg: Dict, formatter: ImageProcessingFormatter) -> int:
 
     formatter.info("Processing training set augmentation...")
 
-    # First pass: Generate augmentation params for axial plane (reference plane)
-    # These params will be reused for other planes to ensure consistency
-    axial_augmentation_params = {}
+    # First, check which groups have input data available
+    missing_groups = []
+    available_groups = {}
+
     for group in groups:
         if group not in augmentation_targets:
             continue
@@ -278,26 +285,52 @@ def run_process(cfg: Dict, formatter: ImageProcessingFormatter) -> int:
         input_class_path = input_dir / "axial" / "train" / group
         if input_class_path.exists():
             subjects = processor.organize_subjects_by_class(input_class_path)
-            current_count = len(subjects)
-            target_count = augmentation_targets[group].get("target", current_count)
-            subjects_to_augment = max(0, target_count - current_count)
+            available_groups[group] = subjects
+        else:
+            missing_groups.append(group)
 
-            if subjects_to_augment > 0:
-                if not NUMPY_AVAILABLE:
-                    formatter.error("NumPy is required for data balancing")
-                    return 1
-                subject_ids = list(subjects.keys())
-                selected_subjects = np.random.choice(
-                    subject_ids, size=subjects_to_augment, replace=True
-                )
+    # Report missing groups and show augmentation targets
+    if missing_groups:
+        formatter.warning(f"Missing input data for groups: {', '.join(missing_groups)}")
+        formatter.info("These groups will be skipped as there are no source images to augment from.")
+        formatter.info("To process these groups, first run the image_enhancement stage with all groups configured.")
 
-                axial_augmentation_params[group] = {}
-                for i, source_subject in enumerate(selected_subjects):
-                    alpha_id = generate_alphabetical_id(i)
-                    axial_augmentation_params[group][alpha_id] = {
-                        "source": source_subject,
-                        "params": processor.generate_augmentation_params_for_class(),
-                    }
+    # Show augmentation targets with actual counts
+    formatter.info("Augmentation targets:")
+    for group in groups:
+        if group in augmentation_targets:
+            target = augmentation_targets[group].get("target", 0)
+            if group in available_groups:
+                current = len(available_groups[group])
+                formatter.print(f"  • {group}: {current} → {target} subjects")
+            else:
+                formatter.print(f"  • {group}: No input data (target: {target} subjects)")
+    formatter.print("")
+
+    # First pass: Generate augmentation params for axial plane (reference plane)
+    # These params will be reused for other planes to ensure consistency
+    axial_augmentation_params = {}
+    for group, subjects in available_groups.items():
+        current_count = len(subjects)
+        target_count = augmentation_targets[group].get("target", current_count)
+        subjects_to_augment = max(0, target_count - current_count)
+
+        if subjects_to_augment > 0:
+            if not NUMPY_AVAILABLE:
+                formatter.error("NumPy is required for data balancing")
+                return 1
+            subject_ids = list(subjects.keys())
+            selected_subjects = np.random.choice(
+                subject_ids, size=subjects_to_augment, replace=True
+            )
+
+            axial_augmentation_params[group] = {}
+            for i, source_subject in enumerate(selected_subjects):
+                alpha_id = generate_alphabetical_id(i)
+                axial_augmentation_params[group][alpha_id] = {
+                    "source": source_subject,
+                    "params": processor.generate_augmentation_params_for_class(),
+                }
 
     # Process each plane
     for plane_idx, plane in enumerate(slice_types):
@@ -313,7 +346,7 @@ def run_process(cfg: Dict, formatter: ImageProcessingFormatter) -> int:
             output_class_path = output_dir / plane / "train" / group
 
             if not input_class_path.exists():
-                formatter.warning(f"Input directory not found: {input_class_path}")
+                # Skip silently as we already reported missing groups at the start
                 continue
 
             try:
