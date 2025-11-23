@@ -26,7 +26,6 @@ A **complete, production-ready 3D NIfTI preprocessing pipeline** for ADNI T1-wei
   - [Overriding Configuration](#overriding-configuration)
 - [Project Structure](#project-structure)
 - [Output Structure](#output-structure)
-- [Troubleshooting](#troubleshooting)
 - [Contributing](#contributing)
 - [Citation](#citation)
 - [Acknowledgments](#acknowledgments)
